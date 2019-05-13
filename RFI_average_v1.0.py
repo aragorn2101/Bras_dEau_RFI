@@ -1,3 +1,5 @@
+###  UNDER DEVELOPMENT  ###
+
 #!/usr/bin/env python3
 #
 #  Copyright (c) 2019 Nitish Ragoomundun, Mauritius
@@ -24,8 +26,16 @@
 from sys import argv
 from os import path
 from datetime import datetime,timedelta
-#import numpy as np
+import numpy as np
 #import matplotlib.pyplot as plt
+
+
+###
+###  Constants
+###
+
+NumRows = 461
+
 
 
 ###
@@ -101,8 +111,10 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
         raise IndexError
 
     EndTime = LastOne
+    return(StartTime,EndTime)
 
 ###  END Find files and make list  ###
+
 
 
 ###
@@ -224,31 +236,84 @@ DataPath = argv[8]
 ###  Main Function
 ###
 
-###  BEGIN Browse through files  ###
+###  BEGIN Browse through file names  ###
 
 Files = []
 try:
-    find_files(StartTime, EndTime, Pol, Az, Band, DataPath, Files)
-    print("First file is {:s}".format(Files[0]))
-    print("len(Files) = {:d}".format(len(Files)))
-    print("Last file is {:s}".format(Files[-1]))
-    print("Actual StartTime = {:s}".format(StartTime.strftime("%Y%m%d_%H%M")))
-    print("Actual EndTime = {:s}".format(EndTime.strftime("%Y%m%d_%H%M")))
+    # Search for files in time range and fill array of file names
+    StartTime,EndTime = find_files(StartTime, EndTime, Pol, Az, Band, DataPath, Files)
+    ActualTimeRange = EndTime - StartTime
+
+    # Assume that between StartTime and EndTime, files should be uniformly
+    # distributed with 15 minutes interval between them. The division by 9
+    # is done because there are 9 different possible configurations.
+    Ideal_numfiles = (ActualTimeRange / 9) // timedelta(minutes=15)
+
+    # Print some useful statistics
+    print()
+    print("First file:\t{:s}".format(Files[0].replace(DataPath+"/", "")))
+    print("Last file:\t{:s}".format(Files[-1].replace(DataPath+"/", "")))
+
+    print()
+    print("Actual time range (corrected w.r.t available files):")
+    print("{:s}  -->  {:s}".format(StartTime.strftime("%H:%M, %d %B %Y"), EndTime.strftime("%H:%M, %d %B %Y")))
+
+    print()
+    print("Total number of files in time range = {:d}".format(len(Files)))
+    print("Length of time interval = {:7.2f} day(s)".format(ActualTimeRange / timedelta(hours=24)))
+    if len(Files)/Ideal_numfiles < 1.0:
+        print("Number of files expected in time interval: {:d}".format(Ideal_numfiles))
+        print("Percentage completeness: {:6.2f}%".format(len(Files)/Ideal_numfiles * 100))
+    print()
+
 except FileNotFoundError:
     print("Error: Cannot find data files within input time interval with corresponding parameters.")
-    exit(81)
+    exit(80)
 except IndexError:
     print("Error: Time range contains only 1 file for corresponding parameters, cannot average!")
-    exit(82)
+    exit(81)
 
-# Assume that between StartTime and EndTime, files should be uniformly
-# distributed with 15 minutes interval between them.
-
+###  END Browse through file names  ###
 
 
-###  END Browse through files  ###
+
+###  BEGIN Opening files and loading data in array  ###
+
+# First confirm if parameters are correctly set and if user wishes
+# to proceed with calculations.
+Ans = input("Do you wish to proceed with calculations? (y/n)  ")
+if Ans != "Y" and Ans != "y":
+    exit(90)
+else:
+    # Proceed with normal execution of script
+
+    # Create array for input data
+    InputData = np.zeros([NumRows, len(Files)])
+
+    # First file
+    try:
+        RawData = np.loadtxt(fname=Files[0], delimiter=",")
+    except OSError:
+        print("Cannot open {:s}: No such file.\n".format(Files[0]))
+        exit(91)
+
+    # Copy data into first 2 columns of input array
+    InputData[:,0] = RawData[:,0]
+    InputData[:,1] = RawData[:,1]
+
+    # Loop through list of files, open and copy data into array
+    for FILE in Files[1:]:
+        try:
+            RawData = np.loadtxt(fname=Files[0], delimiter=",")
+        except OSError:
+            print("Cannot open {:s}: No such file.\n".format(Files[0]))
+            exit(92)
+
+        InputData[:,0] = RawData[:,0]
+        InputData[:,1] = RawData[:,1]
 
 
+###  END Opening files and loading data in array  ###
 
 #  Loading file into numpy array
 #  Open file containing dates and titles
