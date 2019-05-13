@@ -1,5 +1,3 @@
-###  UNDER DEVELOPMENT  ###
-
 #!/usr/bin/env python3
 #
 #  Copyright (c) 2019 Nitish Ragoomundun, Mauritius
@@ -85,6 +83,7 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
         Filename = construct_filename(DateTime, Pol, Az, Band, DataPath)
         if path.isfile(Filename):
             List.append(Filename)
+            LastOne = DateTime
             DateTime += dt2
         else:
             DateTime -= (dt2 - dt1)
@@ -98,8 +97,10 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
                     else:
                         break
 
-    if len(List) = 1:
+    if len(List) == 1:
         raise IndexError
+
+    EndTime = LastOne
 
 ###  END Find files and make list  ###
 
@@ -223,21 +224,16 @@ DataPath = argv[8]
 ###  Main Function
 ###
 
-dt1 = timedelta(minutes = 1)
-dt2 = timedelta(minutes = 15)
-
-
-
 ###  BEGIN Browse through files  ###
 
 Files = []
-
-# Find the first file
 try:
     find_files(StartTime, EndTime, Pol, Az, Band, DataPath, Files)
     print("First file is {:s}".format(Files[0]))
     print("len(Files) = {:d}".format(len(Files)))
     print("Last file is {:s}".format(Files[-1]))
+    print("Actual StartTime = {:s}".format(StartTime.strftime("%Y%m%d_%H%M")))
+    print("Actual EndTime = {:s}".format(EndTime.strftime("%Y%m%d_%H%M")))
 except FileNotFoundError:
     print("Error: Cannot find data files within input time interval with corresponding parameters.")
     exit(81)
@@ -245,10 +241,10 @@ except IndexError:
     print("Error: Time range contains only 1 file for corresponding parameters, cannot average!")
     exit(82)
 
-# Find all files in the time range defined
+# Assume that between StartTime and EndTime, files should be uniformly
+# distributed with 15 minutes interval between them.
 
-#while True:
-#    Filename = construct_filename(StartTime, Pol, Az, Band, DataPath)
+
 
 ###  END Browse through files  ###
 
