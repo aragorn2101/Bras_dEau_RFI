@@ -117,6 +117,26 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
 
 
 
+###  BEGIN Access files and load data into arrays  ###
+
+def LoadData(FreqArray, PowArray):
+
+    # First file
+    RawData = np.loadtxt(fname=Files[0], delimiter=",")
+
+    # Copy frequencies
+    FreqArray[:]  = RawData[:,0]
+    # Copy magnitudes
+    PowArray[:,0] = RawData[:,1]
+
+    # Loop through rest of the list of files, copy data into array
+    for fileIdx in range(1, len(Files)):
+        RawData = np.loadtxt(fname=Files[fileIdx], delimiter=",")
+        PowArray[:,fileIdx] = RawData[:,1]
+
+###  END Access files and load data into arrays  ###
+
+
 ###
 ###  Parameter Parsing
 ###
@@ -287,42 +307,24 @@ if Ans != "Y" and Ans != "y":
 else:
     # Proceed with normal execution of script
 
-    # Create array for input data
+    # Array for frequency axis
+    Frequency = np.zeros(NumRows)
+
+    # Create array for input power data
     InputData = np.zeros([NumRows, len(Files)])
 
-    # First file
     try:
-        RawData = np.loadtxt(fname=Files[0], delimiter=",")
-    except OSError:
-        print("Cannot open {:s}: No such file.\n".format(Files[0]))
+        LoadData(Frequency, InputData)
+    except OSError as error1:
+        msg = str(error1)
+        print(msg.replace(DataPath+"/", ""))
         exit(91)
-
-    # Copy data into first 2 columns of input array
-    InputData[:,0] = RawData[:,0]
-    InputData[:,1] = RawData[:,1]
-
-    # Loop through list of files, open and copy data into array
-    for FILE in Files[1:]:
-        try:
-            RawData = np.loadtxt(fname=Files[0], delimiter=",")
-        except OSError:
-            print("Cannot open {:s}: No such file.\n".format(Files[0]))
-            exit(92)
-
-        InputData[:,0] = RawData[:,0]
-        InputData[:,1] = RawData[:,1]
-
+    except IOError as error2:
+        msg = str(error2)
+        print(msg.replace(DataPath+"/", ""))
+        exit(92)
 
 ###  END Opening files and loading data in array  ###
 
-#  Loading file into numpy array
-#  Open file containing dates and titles
-"""
-try:
-    data = np.loadtxt(fname=argv[1], delimiter=",")
-except OSError:
-    print("Cannot open {:s}: No such file.\n".format(argv[1]))
-    exit(2)
-"""
 
 exit(0)
