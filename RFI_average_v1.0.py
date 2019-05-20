@@ -1,6 +1,6 @@
-###  UNDER DEVELOPMENT  ###
+###  UNDER DEVELOPMENT  ##
 
-#!/usr/bin/env python3
+##!/usr/bin/env python3
 #
 #  Copyright (c) 2019 Nitish Ragoomundun, Mauritius
 #
@@ -25,6 +25,8 @@
 
 from sys import argv
 from os import path
+#from time import time
+#from random import seed,randint
 from datetime import datetime,timedelta
 import numpy as np
 #import matplotlib.pyplot as plt
@@ -34,8 +36,23 @@ import numpy as np
 ###  Constants
 ###
 
+# Number of data values in each TXT data file
+global NumRows
 NumRows = 461
 
+# Floor of spectrum analyser when amplifer is not working
+#global SpectrumFloor
+#SpectrumFloor = -120.0
+
+# Amplifiers gain in each band
+# +20 dB in band 0
+# +40 dB in bands 1 and 2
+global Gain
+Gain = [20, 40, 40]
+#        0   1   2
+
+# Seed RNG
+#seed(time())
 
 
 ###
@@ -43,7 +60,6 @@ NumRows = 461
 ###
 
 ###  BEGIN Construct filename  ###
-
 def construct_filename(DateTime, Pol, Az, Band, DataPath):
     MiddleName = DateTime.strftime("%Y%m%d_%H%M") + Pol
 
@@ -60,13 +76,11 @@ def construct_filename(DateTime, Pol, Az, Band, DataPath):
     else:
         return(DataPath + "/MRT_" + MiddleName + ".TXT")
 
-
 ###  END Construct filename  ###
 
 
 
 ###  BEGIN Find files and make list  ###
-
 def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
     # Clean list
     List.clear()
@@ -118,35 +132,36 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
 
 
 ###  BEGIN Access files and load data into arrays  ###
-
 def LoadData(FreqArray, PowArray):
 
-    # First file
-    RawData = np.loadtxt(fname=Files[0], delimiter=",")
-
-    # Copy frequencies
-    FreqArray[:]  = RawData[:,0]
-    # Copy magnitudes
-    PowArray[:,0] = RawData[:,1]
-
-    # Loop through rest of the list of files, copy data into array
-    for fileIdx in range(1, len(Files)):
+    try:
+        # First file
+        fileIdx = 0
         RawData = np.loadtxt(fname=Files[fileIdx], delimiter=",")
-        PowArray[:,fileIdx] = RawData[:,1]
+
+        # Copy frequencies
+        FreqArray[:]  = RawData[:,0]
+        # Copy magnitudes
+        PowArray[:,0] = RawData[:,1]
+
+        # Loop through the rest of the list of files, copy data into array
+        for fileIdx in range(1, len(Files)):
+            RawData = np.loadtxt(fname=Files[fileIdx], delimiter=",")
+            PowArray[:,fileIdx] = RawData[:,1]
+
+    except OSError:
+        raise OSError("Error when loading file {:s}".format(Files[fileIdx]))
+    except IndexError:
+        raise IndexError("Error when loading data from file {:s} into array.".format(Files[fileIdx]))
 
 ###  END Access files and load data into arrays  ###
 
 
-###
-###  Parameter Parsing
-###
 
-###  BEGIN Check validity of command line arguments  ###
-try:
-    if len(argv) <= 8:
-        raise OSError
-except OSError:
-    print("Usage: {:s} STARTDATE STARTTIME ENDDATE ENDTIME POL DIR BAND SOURCEDIR".format(argv[0]))
+###  BEGIN Print help  ###
+def print_help(ScriptName):
+    print()
+    print("Usage: {:s} STARTDATE STARTTIME ENDDATE ENDTIME POL DIR BAND SOURCEDIR".format(ScriptName))
     print("\nSTARTDATE: initial date for averaging in format YYYYMMDD")
     print("STARTTIME: starting time on the initial date in format HHmm")
     print("ENDDATE: closing date for range of data to be considered in format YYYYMMDD")
@@ -159,6 +174,66 @@ except OSError:
     print("      1 :     325 MHz --     329 MHz (bandwidth:   4 MHz)")
     print("      2 : 327.275 MHz -- 327.525 MHz (bandwidth: 250 KHz)")
     print()
+
+    return(0)
+###  END Print help  ###
+
+
+
+###  BEGIN Print runtime configurations  ###
+def print_runconfig(List, Ideal_NFiles, StartTime, EndTime, TimeRange, Pol, Az, Band, DataPath):
+
+    # String to describe polarisation
+    if Pol == "H":
+        sPol = "horizontal"
+    else:
+        sPol = "vertical"
+
+    # String to describe frequency bandwidth
+    if argv[7] == "0":
+        sBand = "1 MHz -- 1 GHz (bandwidth: 999 MHz)"
+    elif argv[7] == "1":
+        sBand = "325 MHz -- 329 MHz (bandwidth: 4 MHz)"
+    else:
+        sBand = "327.275 MHz -- 327.525 MHz (bandwidth: 250 KHz)"
+
+    print()
+    print("First file:\t{:s}".format(List[0].replace(DataPath+"/", "")))
+    print("Last file:\t{:s}".format(List[-1].replace(DataPath+"/", "")))
+
+    print()
+    print("Actual time range (corrected w.r.t available files)")
+    print("and current parameters:")
+    print()
+    print("{:s}  -->  {:s}".format(StartTime.strftime("%H:%M, %d %B %Y"), EndTime.strftime("%H:%M, %d %B %Y")))
+    print()
+    print("Length of time interval:  {:.2f} day(s)".format(TimeRange / timedelta(hours=24)))
+    print("Polarisation: {:s}".format(sPol))
+    print("Azimuth: {:s} deg".format(Az))
+    print("Frequency band: {:s}".format(sBand))
+
+    print()
+    print("Total number of files in time range: {:d}".format(len(List)))
+    if len(List)/Ideal_NFiles < 1.0:
+        print("Number of files expected in time interval: {:d}".format(Ideal_NFiles))
+        print("Percentage completeness: {:6.2f}%".format(len(List)/Ideal_NFiles * 100))
+    print()
+
+    return(0)
+###  END Print runtime configurations  ###
+
+
+
+###
+###  Parameter Parsing
+###
+
+###  BEGIN Check validity of command line arguments  ###
+try:
+    if len(argv) <= 8:
+        raise OSError
+except OSError:
+    print_help(argv[0])
     exit(1)
 
 
@@ -207,7 +282,7 @@ except ValueError:
 
 # Check validity of POL (argv[5])
 try:
-    if argv[5] not in {'H', 'V'}:
+    if argv[5] not in {"H", "V"}:
         raise ValueError
 except ValueError:
     print("Invalid polarisation!")
@@ -262,29 +337,6 @@ Files = []
 try:
     # Search for files in time range and fill array of file names
     StartTime,EndTime = find_files(StartTime, EndTime, Pol, Az, Band, DataPath, Files)
-    ActualTimeRange = EndTime - StartTime
-
-    # Assume that between StartTime and EndTime, files should be uniformly
-    # distributed with 15 minutes interval between them. The division by 9
-    # is done because there are 9 different possible configurations.
-    Ideal_numfiles = (ActualTimeRange / 9) // timedelta(minutes=15)
-
-    # Print some useful statistics
-    print()
-    print("First file:\t{:s}".format(Files[0].replace(DataPath+"/", "")))
-    print("Last file:\t{:s}".format(Files[-1].replace(DataPath+"/", "")))
-
-    print()
-    print("Actual time range (corrected w.r.t available files):")
-    print("{:s}  -->  {:s}".format(StartTime.strftime("%H:%M, %d %B %Y"), EndTime.strftime("%H:%M, %d %B %Y")))
-
-    print()
-    print("Total number of files in time range = {:d}".format(len(Files)))
-    print("Length of time interval = {:7.2f} day(s)".format(ActualTimeRange / timedelta(hours=24)))
-    if len(Files)/Ideal_numfiles < 1.0:
-        print("Number of files expected in time interval: {:d}".format(Ideal_numfiles))
-        print("Percentage completeness: {:6.2f}%".format(len(Files)/Ideal_numfiles * 100))
-    print()
 
 except FileNotFoundError:
     print("Error: Cannot find data files within input time interval with corresponding parameters.")
@@ -299,8 +351,19 @@ except IndexError:
 
 ###  BEGIN Opening files and loading data in array  ###
 
-# First confirm if parameters are correctly set and if user wishes
-# to proceed with calculations.
+# First print runtime configuration settings and ask user for
+# confirmation before proceeding.
+ActualTimeRange = EndTime - StartTime
+
+# Assume that between StartTime and EndTime, files should be uniformly
+# distributed with 15 minutes interval between them. The division by 9
+# is done because there are 9 different possible configurations.
+Ideal_numfiles = (ActualTimeRange / 9) // timedelta(minutes=15)
+
+# Print runtime configurations/statistics
+print_runconfig(Files, Ideal_numfiles, StartTime, EndTime, ActualTimeRange, Pol, Az, Band, DataPath)
+
+# Prompt user
 Ans = input("Do you wish to proceed with calculations? (y/n)  ")
 if Ans != "Y" and Ans != "y":
     exit(90)
@@ -319,12 +382,24 @@ else:
         msg = str(error1)
         print(msg.replace(DataPath+"/", ""))
         exit(91)
-    except IOError as error2:
+    except IndexError as error2:
         msg = str(error2)
         print(msg.replace(DataPath+"/", ""))
         exit(92)
 
 ###  END Opening files and loading data in array  ###
 
+
+
+###  BEGIN Averaging  ###
+
+# Subtract amplifier gain
+
+
+# Calculate mean of amplitudes for each frequency
+
+
+
+###  END Averaging  ###
 
 exit(0)
