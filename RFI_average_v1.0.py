@@ -1,6 +1,4 @@
-###  UNDER DEVELOPMENT  ##
-
-##!/usr/bin/env python3
+#!/usr/bin/env python3
 #
 #  Copyright (c) 2019 Nitish Ragoomundun, Mauritius
 #
@@ -25,11 +23,10 @@
 
 from sys import argv
 from os import path
-#from time import time
-#from random import seed,randint
 from datetime import datetime,timedelta
-import numpy as np
-#import matplotlib.pyplot as plt
+from numpy import loadtxt,zeros,subtract,mean,linspace
+import matplotlib.pyplot as plt
+from matplotlib.ticker import EngFormatter
 
 
 ###
@@ -40,19 +37,12 @@ import numpy as np
 global NumRows
 NumRows = 461
 
-# Floor of spectrum analyser when amplifer is not working
-#global SpectrumFloor
-#SpectrumFloor = -120.0
-
 # Amplifiers gain in each band
 # +20 dB in band 0
 # +40 dB in bands 1 and 2
 global Gain
 Gain = [20, 40, 40]
 #        0   1   2
-
-# Seed RNG
-#seed(time())
 
 
 ###
@@ -137,7 +127,7 @@ def LoadData(FreqArray, PowArray):
     try:
         # First file
         fileIdx = 0
-        RawData = np.loadtxt(fname=Files[fileIdx], delimiter=",")
+        RawData = loadtxt(fname=Files[fileIdx], delimiter=",")
 
         # Copy frequencies
         FreqArray[:]  = RawData[:,0]
@@ -146,7 +136,7 @@ def LoadData(FreqArray, PowArray):
 
         # Loop through the rest of the list of files, copy data into array
         for fileIdx in range(1, len(Files)):
-            RawData = np.loadtxt(fname=Files[fileIdx], delimiter=",")
+            RawData = loadtxt(fname=Files[fileIdx], delimiter=",")
             PowArray[:,fileIdx] = RawData[:,1]
 
     except OSError:
@@ -190,9 +180,9 @@ def print_runconfig(List, Ideal_NFiles, StartTime, EndTime, TimeRange, Pol, Az, 
         sPol = "vertical"
 
     # String to describe frequency bandwidth
-    if argv[7] == "0":
+    if Band == "0":
         sBand = "1 MHz -- 1 GHz (bandwidth: 999 MHz)"
-    elif argv[7] == "1":
+    elif Band == "1":
         sBand = "325 MHz -- 329 MHz (bandwidth: 4 MHz)"
     else:
         sBand = "327.275 MHz -- 327.525 MHz (bandwidth: 250 KHz)"
@@ -371,10 +361,10 @@ else:
     # Proceed with normal execution of script
 
     # Array for frequency axis
-    Frequency = np.zeros(NumRows)
+    Frequency = zeros(NumRows)
 
     # Create array for input power data
-    InputData = np.zeros([NumRows, len(Files)])
+    InputData = zeros([NumRows, len(Files)])
 
     try:
         LoadData(Frequency, InputData)
@@ -391,15 +381,44 @@ else:
 
 
 
-###  BEGIN Averaging  ###
+###  BEGIN Averaging and plotting  ###
 
 # Subtract amplifier gain
-
+subtract(InputData, Gain[int(Band)])
 
 # Calculate mean of amplitudes for each frequency
+# (across columns/along rows: axis = 1)
+Mean = mean(InputData, axis=1)
 
+# Plot
+xLowerLim = Frequency[0]
+xUpperLim = Frequency[-1]
 
+plt.figure(1)
+ax1 = plt.subplot(1,1,1)
+plt.title("{:s} -- {:s} (Pol {:s}, Az {:s}{:s}, Band {:s})".format(StartTime.strftime("%H:%M, %d %B %Y"), EndTime.strftime("%H:%M, %d %B %Y"), Pol, Az, chr(176), Band))
+plt.xlabel("Frequency", fontsize=12)
+if Band == "0":
+    plt.xlim(1e6, 1e9)
+    plt.xticks([1e6, 125e6, 250e6, 375e6, 500e6, 625e6, 750e6, 875e6, 1e9])
+    formatter = EngFormatter(unit="Hz", places=0)
+elif Band == "1":
+    plt.xlim(325.0e6, 329.0e6)
+    plt.xticks([325.0e6, 325.5e6, 326.0e6, 326.5e6, 327.0e6, 327.5e6, 328.0e6, 328.5e6, 329.0e6])
+    formatter = EngFormatter(unit="Hz", places=1)
+else:
+    plt.xlim(327.275e6, 327.525e6)
+    plt.xticks([327.275e6, 327.350e6, 327.400e6, 327.450e6, 327.525e6])
+    formatter = EngFormatter(unit="Hz", places=3)
 
-###  END Averaging  ###
+ax1.xaxis.set_major_formatter(formatter)
+plt.tick_params(labelsize=14)
+plt.ylabel("Mean Amplitude / dB", fontsize=12)
+plt.grid(True)
+plt.plot(Frequency, Mean, color="blue")
+
+plt.show()
+
+###  END Averaging and plotting  ###
 
 exit(0)
