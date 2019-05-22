@@ -1,21 +1,50 @@
 # Bras_dEau_RFI
 
-Radio Frequency Interference measurements at Bras d'Eau (site for ex-MRT and
-MDT instruments) and script to visualise the data. Data is in the csv format.
+Scripts to visualise Radio Frequency Interference (RFI) data stored in csv
+format. The measurements were done at Bras d'Eau (site of ex-MRT and the future
+MDT). A sample of the data is found in directories csvDataFiles and
+txtDataFiles. The set consists of all the data measured in April 2019. The .CSV
+files in csvDataFiles contain the raw data files from the spectrum analyser.
+These include a header at the beginning of each data file indicating
+configurations. The txtDataFiles contains .TXT files with the raw frequency and
+power measurements in a comma separated format. It is the **.TXT files** which
+must be passed to the scripts. The filenames are coded. E.g.
+```
+MRT_20190405_2230H000_2.CSV
+```
+MRT: site at which measurements were taken - Bras d'Eau </br>
+20190405_2230: time and date at which file was written - 22:30, April 5th, 2019 </br>
+H: polarisation - horizontal </br>
+000: direction along which measurement was done - Azimuth = 0 degrees </br>
+\_2: frequency band - Band 2: 327.275 MHz -- 327.525 MHz
 
-**Usage:**
-./RFI_average_v1.0.py STARTDATE STARTTIME ENDDATE ENDTIME POL DIR BAND SOURCEDIR
+**Script usage:**
+```
+./RFI_average_vx.x.py STARTDATE STARTTIME ENDDATE ENDTIME POL AZ BAND DATADIR
 or
-python3 RFI_average_v1.0.py STARTDATE STARTTIME ENDDATE ENDTIME POL DIR BAND SOURCEDIR
+python3 RFI_average_vx.x.py STARTDATE STARTTIME ENDDATE ENDTIME POL AZ BAND DATADIR
 
-STARTDATE: initial date for averaging in format YYYYMMDD </br>
-STARTTIME: starting time on the initial date in format HHmm </br>
-ENDDATE: closing date for range of data to be considered in format YYYYMMDD </br>
-ENDTIME: last time on the closing date in format HHmm </br>
-POL: polarisation (only parameters \'H\' or \'V\' are accepted </br>
-DIR: direction in terms of Azimuth angle (only 0, 120 or 240 are valid </br>
-BAND: frequency band of measurements, the accepted inputs for this parameter") are only 0, 1 or 2. </br>
-The meaning of each label are as follows: </br>
-    + 0 :       1 MHz --       1 GHz (bandwidth: 999 MHz) </br>
-    + 1 :     325 MHz --     329 MHz (bandwidth:   4 MHz) </br>
-    + 2 : 327.275 MHz -- 327.525 MHz (bandwidth: 250 KHz) </br>
+STARTDATE: initial date for averaging in format YYYYMMDD
+STARTTIME: starting time on the initial date in format HHmm
+ENDDATE: closing date for range of data to be considered in format YYYYMMDD
+ENDTIME: last time on the closing date in format HHmm
+POL: polarisation (only parameters \'H\' or \'V\' are accepted
+AZ: direction along which measurements were taken, in terms of Azimuth angle
+    (only 0, 120 or 240 are valid)
+
+BAND: frequency band of measurements, the accepted inputs for this parameter") are only 0, 1 or 2.
+The meaning of each label are as follows:
+	0 :       1 MHz --       1 GHz (bandwidth: 999 MHz)
+	1 :     325 MHz --     329 MHz (bandwidth:   4 MHz)
+	2 : 327.275 MHz -- 327.525 MHz (bandwidth: 250 KHz)
+
+DATADIR: path of the directory holding the .TXT data files.
+```
+e.g.
+```
+./RFI_average_vx.x.py 20190415 0700 20190515 2359 V 0 1 ./txtDataFiles
+```
+The above command will look for data between 7:00 a.m, April 15th, 2019 and
+11:59 p.m, May 15th, 2019. The measured polarisation sought is vertical (V),
+for direction Azimuth = 0 degrees, in the frequency band 1, i.e.
+325 MHz -- 329 MHz.
