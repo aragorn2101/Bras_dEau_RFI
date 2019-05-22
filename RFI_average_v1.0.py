@@ -21,10 +21,14 @@
 #  SOFTWARE.
 #
 
+#
+#  Run script without arguments to get a help printed.
+#
+
 from sys import argv
 from os import path
 from datetime import datetime,timedelta
-from numpy import loadtxt,zeros,subtract,mean,linspace
+from numpy import loadtxt,zeros,subtract,mean
 import matplotlib.pyplot as plt
 from matplotlib.ticker import EngFormatter
 
@@ -36,6 +40,10 @@ from matplotlib.ticker import EngFormatter
 # Number of data values in each TXT data file
 global NumRows
 NumRows = 461
+
+# Floor of spectrum analyser when amplifer is not working
+#global SpectrumFloor
+#SpectrumFloor = -120.0
 
 # Amplifiers gain in each band
 # +20 dB in band 0
@@ -151,18 +159,26 @@ def LoadData(FreqArray, PowArray):
 ###  BEGIN Print help  ###
 def print_help(ScriptName):
     print()
-    print("Usage: {:s} STARTDATE STARTTIME ENDDATE ENDTIME POL DIR BAND SOURCEDIR".format(ScriptName))
+    print("Usage: {:s} STARTDATE STARTTIME ENDDATE ENDTIME POL AZ BAND DATADIR".format(ScriptName))
     print("\nSTARTDATE: initial date for averaging in format YYYYMMDD")
     print("STARTTIME: starting time on the initial date in format HHmm")
     print("ENDDATE: closing date for range of data to be considered in format YYYYMMDD")
     print("ENDTIME: last time on the closing date in format HHmm")
     print("POL: polarisation (only parameters \'H\' or \'V\' are accepted)")
-    print("DIR: direction in terms of Azimuth angle (only 0, 120 or 240 are valid)")
+    print("AZ: direction along which measurements were taken, in terms of Azimuth angle)")
+    print("    (only 0, 120 or 240 are valid)\n");
     print("BAND: frequency band of measurements, the accepted inputs for this parameter")
     print("      are only 0, 1 or 2. The meaning of each label are as follows:\n")
     print("      0 :       1 MHz --       1 GHz (bandwidth: 999 MHz)")
     print("      1 :     325 MHz --     329 MHz (bandwidth:   4 MHz)")
-    print("      2 : 327.275 MHz -- 327.525 MHz (bandwidth: 250 KHz)")
+    print("      2 : 327.275 MHz -- 327.525 MHz (bandwidth: 250 KHz)\n")
+    print("DATADIR: path of the directory holding the .TXT data files\n")
+    print("Example:")
+    print("{:s} 20190415 0700 20190515 2359 V 0 1 ./txtDataFiles\n".format(ScriptName))
+    print("The above command will look for data between 7:00 a.m, April 15th, 2019 and")
+    print("11:59 p.m, May 15th, 2019. The measured polarisation sought is vertical (V),")
+    print("for direction Azimuth = 0 degrees, in the frequency band 1, i.e.")
+    print("325 MHz -- 329 MHz.")
     print()
 
     return(0)
