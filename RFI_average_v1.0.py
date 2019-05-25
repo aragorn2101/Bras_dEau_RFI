@@ -21,14 +21,12 @@
 #  SOFTWARE.
 #
 
-#
-#  Run script without arguments to get a help printed.
-#
-
 from sys import argv
 from os import path
+from time import time
+from random import seed,randint
 from datetime import datetime,timedelta
-from numpy import loadtxt,zeros,subtract,mean
+from numpy import loadtxt,append,zeros,subtract,mean
 import matplotlib.pyplot as plt
 from matplotlib.ticker import EngFormatter
 
@@ -42,8 +40,8 @@ global NumRows
 NumRows = 461
 
 # Floor of spectrum analyser when amplifer is not working
-#global SpectrumFloor
-#SpectrumFloor = -120.0
+global SpectrumFloor
+SpectrumFloor = -120.0
 
 # Amplifiers gain in each band
 # +20 dB in band 0
@@ -51,6 +49,9 @@ NumRows = 461
 global Gain
 Gain = [20, 40, 40]
 #        0   1   2
+
+# Seed RNG
+seed(time())
 
 
 ###
@@ -135,7 +136,7 @@ def LoadData(FreqArray, PowArray):
     try:
         # First file
         fileIdx = 0
-        RawData = loadtxt(fname=Files[fileIdx], delimiter=",")
+        RawData = loadtxt(fname=Files[fileIdx], delimiter=',')
 
         # Copy frequencies
         FreqArray[:]  = RawData[:,0]
@@ -144,8 +145,8 @@ def LoadData(FreqArray, PowArray):
 
         # Loop through the rest of the list of files, copy data into array
         for fileIdx in range(1, len(Files)):
-            RawData = loadtxt(fname=Files[fileIdx], delimiter=",")
-            PowArray[:,fileIdx] = RawData[:,1]
+            RawData = loadtxt(fname=Files[fileIdx], delimiter=',')
+            PowArray = append(PowArray, RawData[:,1].reshape(NumRows,1), axis=1)
 
     except OSError:
         raise OSError("Error when loading file {:s}".format(Files[fileIdx]))
@@ -377,10 +378,10 @@ else:
     # Proceed with normal execution of script
 
     # Array for frequency axis
-    Frequency = zeros(NumRows)
+    Frequency = zeros((NumRows))
 
     # Create array for input power data
-    InputData = zeros([NumRows, len(Files)])
+    InputData = zeros((NumRows,1))
 
     try:
         LoadData(Frequency, InputData)
@@ -414,6 +415,9 @@ plt.figure(1)
 ax1 = plt.subplot(1,1,1)
 plt.title("{:s} -- {:s} (Pol {:s}, Az {:s}{:s}, Band {:s})".format(StartTime.strftime("%H:%M, %d %B %Y"), EndTime.strftime("%H:%M, %d %B %Y"), Pol, Az, chr(176), Band))
 plt.xlabel("Frequency", fontsize=12)
+
+# Custom labels on the frequency axis, since different frequency bands
+# are strictly defined.
 if Band == "0":
     plt.xlim(1e6, 1e9)
     plt.xticks([1e6, 125e6, 250e6, 375e6, 500e6, 625e6, 750e6, 875e6, 1e9])
