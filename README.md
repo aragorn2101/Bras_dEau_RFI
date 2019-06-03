@@ -42,42 +42,47 @@ DATADIR: path of the directory holding the .TXT data files.
 ```
 e.g.
 ```
-./RFI_average_vx.x.py 20190415 0700 20190515 2359 V 0 1 ./txtDataFiles
+./RFI_average_v1.1.py 20190415 0700 20190430 2245 H 0 1 ./txtDataFiles
 ```
 The above command will look for data between 7:00 a.m, April 15th, 2019 and
-11:59 p.m, May 15th, 2019. The measured polarisation sought is vertical (V),
+22:45 p.m, May 5th, 2019. The measured polarisation sought is horizontal (H),
 for direction Azimuth = 0 degrees, in the frequency band 1, i.e.
 325 MHz -- 329 MHz.
 
 Command line output from script for this example:
 ```
-First file:     MRT_20190503_0649V000_2.TXT
-Last file:      MRT_20190504_0619V000_2.TXT
+First file:     MRT_20190424_0648H000_1.TXT
+Last file:      MRT_20190425_0618H000_1.TXT
 
 Actual time range (corrected w.r.t available files)
 and current parameters:
 
-06:49, 03 May 2019  -->  06:19, 04 May 2019
+06:48, 24 April 2019  -->  06:18, 25 April 2019
 
 Length of time interval:  0.98 day(s)
-Polarisation: vertical
+Polarisation: horizontal
 Azimuth: 0 deg
-Frequency band: 327.275 MHz -- 327.525 MHz (bandwidth: 250 KHz)
+Frequency band: 325 MHz -- 329 MHz (bandwidth: 4 MHz)
 
 Total number of files in time range: 95
 
 Do you wish to proceed with calculations? (y/n)  y
 
 -> Could not open the following files:
-MRT_20190503_1404V000_2.TXT
-MRT_20190503_1404V000_2.TXT
+MRT_20190424_0818H000_1.TXT
+MRT_20190424_0818H000_1.TXT
+MRT_20190424_0818H000_1.TXT
 
--> Total number of useful files therefore: 93
+-> Total number of useful files therefore: 92
 ```
 
-There were 2 rejected files because the script detected that for two of the
-data files, the amplifier was not working properly. The noise floor of the
-spectrum analyzer was observed to be at -120dB. So, the script flags all the
-data files containing average amplitudes below -120dB, as this will indicate
-that the amplifier was not working during this observation. The amplifier level
-for bandwidth 0 is +20dB, while it is +40dB for bandwidths 1 and 2.
+The output informs the user that, according to available data files, the range
+will be restrscted to *06:48, 24 April 2019  -->  06:18, 25 April 2019*.
+There were 2 rejected files within this range because the script detected that
+these 2 files, the amplifier was not working properly. The noise floor of the
+spectrum analyzer was observed to be around -120dB. So, the script flags all
+the data files containing average amplitudes below -117dB, as this will
+indicate that the amplifier was not working during this observation. A value of
+-117dB is used because in certain data files the amplitudes were at this level.
+The amplifier level for bandwidth 0 is +20dB, while it is +40dB for bandwidths
+1 and 2.
