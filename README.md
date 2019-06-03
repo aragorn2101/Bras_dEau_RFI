@@ -12,13 +12,15 @@ must be passed to the scripts. The filenames are coded. E.g.
 ```
 MRT_20190405_2230H000_2.CSV
 ```
-MRT: site at which measurements were taken - Bras d'Eau </br>
-20190405_2230: time and date at which file was written - 22:30, April 5th, 2019 </br>
-H: polarisation - horizontal </br>
-000: direction along which measurement was done - Azimuth = 0 degrees </br>
-\_2: frequency band - Band 2: 327.275 MHz -- 327.525 MHz
+**MRT:** site at which measurements were taken - Bras d'Eau </br>
+**20190405_2230:** time and date at which file was written - 22:30, April 5th, 2019 </br>
+**H:** polarisation - horizontal </br>
+**000:** direction along which measurement was done - Azimuth = 0 degrees </br>
+**_2:** frequency band - Band 2: 327.275 MHz -- 327.525 MHz
 
-**Script usage:**
+
+## Script usage
+
 ```
 ./RFI_average_vx.x.py STARTDATE STARTTIME ENDDATE ENDTIME POL AZ BAND DATADIR
 or
@@ -40,7 +42,8 @@ The meaning of each label are as follows:
 
 DATADIR: path of the directory holding the .TXT data files.
 ```
-e.g.
+
+**Example:**
 ```
 ./RFI_average_v1.1.py 20190415 0700 20190430 2245 H 0 1 ./txtDataFiles
 ```
@@ -77,7 +80,7 @@ MRT_20190424_0818H000_1.TXT
 ```
 
 The output informs the user that, according to available data files, the range
-will be restrscted to *06:48, 24 April 2019  -->  06:18, 25 April 2019*.
+will be restriscted to *06:48, 24 April 2019  -->  06:18, 25 April 2019*.
 There were 2 rejected files within this range because the script detected that
 these 2 files, the amplifier was not working properly. The noise floor of the
 spectrum analyzer was observed to be around -120dB. So, the script flags all
