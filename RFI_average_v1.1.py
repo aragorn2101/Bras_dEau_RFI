@@ -130,13 +130,37 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
 
 
 
+###  BEGIN Check if amplifier was working correctly  ###
+def CheckAmp(RawData):
+    Mean = 0.0
+
+    for i in range(0,3):
+        Mean += RawData[randint(0, NumRows-1), 1]
+
+    Mean /= 3
+
+    # Noise floor level of the spectrum analyzer was at -120dB
+    # So, if on average, signal was at that level, it means that
+    # amplifier was not functioning properly.
+    if Mean < -120:
+        return(1)
+    else:
+        return(0)
+
+###  END Check if amplifier was working correctly  ###
+
+
+
 ###  BEGIN Access files and load data into arrays  ###
-def LoadData(FreqArray, PowArray):
+def LoadData(List, Ideal_NFiles, FreqArray, PowArray):
+
+    # List for rejected files
+    Rejected = []
 
     try:
         # First file
         fileIdx = 0
-        RawData = loadtxt(fname=Files[fileIdx], delimiter=',')
+        RawData = loadtxt(fname=List[fileIdx], delimiter=',')
 
         # Copy frequencies
         FreqArray[:]  = RawData[:,0]
@@ -144,9 +168,27 @@ def LoadData(FreqArray, PowArray):
         PowArray[:,0] = RawData[:,1]
 
         # Loop through the rest of the list of files, copy data into array
-        for fileIdx in range(1, len(Files)):
-            RawData = loadtxt(fname=Files[fileIdx], delimiter=',')
-            PowArray = append(PowArray, RawData[:,1].reshape(NumRows,1), axis=1)
+        for fileIdx in range(1, len(List)):
+            RawData = loadtxt(fname=List[fileIdx], delimiter=',')
+            if CheckAmp(RawData) == 0:
+                PowArray = append(PowArray, RawData[:,1].reshape(NumRows,1), axis=1)
+            else:
+                Rejected.append(Files[fileIdx])
+
+        if len(Rejected) != 0:
+            print()
+            print("-> Could not open the following files:")
+            for i in range(0, len(Rejected)):
+                print("{:s}".format(Rejected[0].replace(DataPath+"/", "")))
+
+            print("\n-> Total number of useful files therefore: {:d}".format(len(Files) - len(Rejected)))
+
+            if (len(Files) - len(Rejected))/Ideal_NFiles < 1.0:
+                print("-> Number of files expected in time interval: {:d}".format(Ideal_NFiles))
+                print("-> Percentage completeness: {:6.2f}%".format((len(Files) - len(Rejected))/Ideal_NFiles * 100))
+            print()
+
+
 
     except OSError:
         raise OSError("Error when loading file {:s}".format(Files[fileIdx]))
@@ -232,10 +274,10 @@ def print_runconfig(List, Ideal_NFiles, StartTime, EndTime, TimeRange, Pol, Az, 
 
 
 ###
-###  Parameter Parsing
+###  Main Function
 ###
 
-###  BEGIN Check validity of command line arguments  ###
+###  BEGIN Parsing of command line arguments  ###
 try:
     if len(argv) <= 8:
         raise OSError
@@ -330,13 +372,9 @@ except ValueError:
 
 DataPath = argv[8]
 
-###  END Check validity of command line arguments  ###
+###  END Parsing of command line arguments  ###
 
 
-
-###
-###  Main Function
-###
 
 ###  BEGIN Browse through file names  ###
 
@@ -384,7 +422,7 @@ else:
     InputData = zeros((NumRows,1))
 
     try:
-        LoadData(Frequency, InputData)
+        LoadData(Files, Ideal_numfiles, Frequency, InputData)
     except OSError as error1:
         msg = str(error1)
         print(msg.replace(DataPath+"/", ""))
