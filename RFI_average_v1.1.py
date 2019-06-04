@@ -1,25 +1,32 @@
 #!/usr/bin/env python3
 #
+#  Script to average and plot RFI data for the
+#  Mauritius Deuterium Telescope (MDT).
+#  Version 1.1
+#
 #  Copyright (c) 2019 Nitish Ragoomundun, Mauritius
 #
-#  Permission is hereby granted, free of charge, to any person obtaining a copy
-#  of this software and associated documentation files (the "Software"), to deal
-#  in the Software without restriction, including without limitation the rights
-#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#  copies of the Software, and to permit persons to whom the Software is
-#  furnished to do so, subject to the following conditions:
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
 #
-#  The above copyright notice and this permission notice shall be included in all
-#  copies or substantial portions of the Software.
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
 #
-#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-#  SOFTWARE.
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
+# ------------------------------------------------------------------------------
+#
+# Changelog
+#
+# 1.1: 03.06.2019
+#      * Added flagging of data for malfunctioned amplifier
+#
+
 
 from sys import argv
 from os import path
@@ -134,15 +141,16 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
 def CheckAmp(RawData):
     Mean = 0.0
 
-    for i in range(0,3):
+    # Choose 5 random data points
+    for i in range(0,5):
         Mean += RawData[randint(0, NumRows-1), 1]
 
-    Mean /= 3
+    Mean *= 0.2
 
     # Noise floor level of the spectrum analyzer was at -120dB
     # So, if on average, signal was at that level, it means that
     # amplifier was not functioning properly.
-    if Mean < -120:
+    if Mean < -117:
         return(1)
     else:
         return(0)
@@ -217,11 +225,11 @@ def print_help(ScriptName):
     print("      2 : 327.275 MHz -- 327.525 MHz (bandwidth: 250 KHz)\n")
     print("DATADIR: path of the directory holding the .TXT data files\n")
     print("Example:")
-    print("{:s} 20190415 0700 20190515 2359 V 0 1 ./txtDataFiles\n".format(ScriptName))
-    print("The above command will look for data between 7:00 a.m, April 15th, 2019 and")
-    print("11:59 p.m, May 15th, 2019. The measured polarisation sought is vertical (V),")
-    print("for direction Azimuth = 0 degrees, in the frequency band 1, i.e.")
-    print("325 MHz -- 329 MHz.")
+    print("{:s} 20190415 0700 20190430 2245 H 0 1 ./txtDataFiles\n".format(ScriptName))
+    print("The above command will look for data in directory txtDataFiles found in current")
+    print("directory. Data files should range from 7:00 a.m, April 15th, 2019 to 22:45")
+    print("p.m, May 5th, 2019. The measured polarisation sought is horizontal (H), for")
+    print("direction Azimuth = 0 degrees, in the frequency band 1, i.e.  325 MHz -- 329 MHz.")
     print()
 
     return(0)

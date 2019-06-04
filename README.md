@@ -19,6 +19,13 @@ MRT_20190405_2230H000_2.CSV
 **_2:** frequency band - Band 2: 327.275 MHz -- 327.525 MHz
 
 
+## Dependencies
+
+- Python 3
+- Numpy
+- Matplotlib
+
+
 ## Script usage
 
 ```
@@ -47,10 +54,11 @@ DATADIR: path of the directory holding the .TXT data files.
 ```
 ./RFI_average_v1.1.py 20190415 0700 20190430 2245 H 0 1 ./txtDataFiles
 ```
-The above command will look for data between 7:00 a.m, April 15th, 2019 and
-22:45 p.m, May 5th, 2019. The measured polarisation sought is horizontal (H),
-for direction Azimuth = 0 degrees, in the frequency band 1, i.e.
-325 MHz -- 329 MHz.
+The above command will look for data in directory txtDataFiles found in current
+directory. Data files should range from 7:00 a.m, April 15th, 2019 to 22:45
+p.m, May 5th, 2019. The measured polarisation sought is horizontal (H), for
+direction Azimuth = 0 degrees, in the frequency band 1, i.e.  325 MHz -- 329
+MHz.
 
 Command line output from script for this example:
 ```
@@ -80,7 +88,7 @@ MRT_20190424_0818H000_1.TXT
 ```
 
 The output informs the user that, according to available data files, the range
-will be restriscted to *06:48, 24 April 2019  -->  06:18, 25 April 2019*.
+will be restricted to *06:48, 24 April 2019  -->  06:18, 25 April 2019*.
 There were 2 rejected files within this range because the script detected that
 these 2 files, the amplifier was not working properly. The noise floor of the
 spectrum analyzer was observed to be around -120dB. So, the script flags all
