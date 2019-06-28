@@ -37,11 +37,11 @@ STARTDATE: initial date for averaging in format YYYYMMDD
 STARTTIME: starting time on the initial date in format HHmm
 ENDDATE: closing date for range of data to be considered in format YYYYMMDD
 ENDTIME: last time on the closing date in format HHmm
-POL: polarisation (only parameters \'H\' or \'V\' are accepted
+POL: polarisation (only parameters 'H' or 'V' are accepted
 AZ: direction along which measurements were taken, in terms of Azimuth angle
     (only 0, 120 or 240 are valid)
 
-BAND: frequency band of measurements, the accepted inputs for this parameter") are only 0, 1 or 2.
+BAND: frequency band of measurements, the accepted inputs for this parameter are only 0, 1 or 2.
 The meaning of each label are as follows:
 	0 :       1 MHz --       1 GHz (bandwidth: 999 MHz)
 	1 :     325 MHz --     329 MHz (bandwidth:   4 MHz)
