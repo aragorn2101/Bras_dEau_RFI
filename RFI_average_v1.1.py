@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
-#  Script to average and plot RFI data for the
-#  Mauritius Deuterium Telescope (MDT).
+#  Script to average and plot RFI data obtained for Bras d'Eau, the location
+#  of the Mauritius Deuterium Telescope (MDT).
 #  Version 1.1
 #
 #  Copyright (c) 2019 Nitish Ragoomundun, Mauritius
@@ -150,7 +150,7 @@ def CheckAmp(RawData):
     # Noise floor level of the spectrum analyzer was at -120dB
     # So, if on average, signal was at that level, it means that
     # amplifier was not functioning properly.
-    if Mean < -117:
+    if Mean < -118:
         return(1)
     else:
         return(0)
@@ -227,9 +227,9 @@ def print_help(ScriptName):
     print("Example:")
     print("{:s} 20190415 0700 20190430 2245 H 0 1 ./txtDataFiles\n".format(ScriptName))
     print("The above command will look for data in directory txtDataFiles found in current")
-    print("directory. Data files should range from 7:00 a.m, April 15th, 2019 to 22:45")
-    print("p.m, May 5th, 2019. The measured polarisation sought is horizontal (H), for")
-    print("direction Azimuth = 0 degrees, in the frequency band 1, i.e.  325 MHz -- 329 MHz.")
+    print("directory. Data files should range from 07:00, April 15th, 2019 to 22:45, May")
+    print("5th 2019. The measured polarisation sought is horizontal (H), for direction")
+    print("Azimuth = 0 degrees, in the frequency band 1, i.e.  325 MHz -- 329 MHz.")
     print()
 
     return(0)

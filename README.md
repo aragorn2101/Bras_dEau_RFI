@@ -55,10 +55,9 @@ DATADIR: path of the directory holding the .TXT data files.
 ./RFI_average_v1.1.py 20190415 0700 20190430 2245 H 0 1 ./txtDataFiles
 ```
 The above command will look for data in directory txtDataFiles found in current
-directory. Data files should range from 7:00 a.m, April 15th, 2019 to 22:45
-p.m, May 5th, 2019. The measured polarisation sought is horizontal (H), for
-direction Azimuth = 0 degrees, in the frequency band 1, i.e.  325 MHz -- 329
-MHz.
+directory. Data files should range from 07:00, April 15th, 2019 to 22:45, May
+5th 2019. The measured polarisation sought is horizontal (H), for direction
+Azimuth = 0 degrees, in the frequency band 1, i.e.  325 MHz -- 329 MHz.
 
 Command line output from script for this example:
 ```
