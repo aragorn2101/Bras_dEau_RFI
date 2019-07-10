@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 #
-#  Script to average and plot RFI data obtained for Bras d'Eau, the location
-#  of the Mauritius Deuterium Telescope (MDT).
-#  Version 1.1
+#  Script to make spectrogram plots of the RFI data for the Mauritius Deuterium
+#  Telescope (MDT) location at Bras d'Eau.
+#  Version 1.0
 #
 #  Copyright (c) 2019 Nitish Ragoomundun, Mauritius
 #
@@ -20,11 +20,6 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 # ------------------------------------------------------------------------------
-#
-# Changelog
-#
-# 1.1: 03.06.2019
-#      * Added flagging of data for malfunctioned amplifier
 #
 
 
@@ -210,11 +205,8 @@ def LoadData(List, Ideal_NFiles, FreqArray, PowArray):
 ###  BEGIN Print help  ###
 def print_help(ScriptName):
     print()
-    print("Usage: {:s} STARTDATE STARTTIME ENDDATE ENDTIME POL AZ BAND DATADIR".format(ScriptName))
-    print("\nSTARTDATE: initial date for averaging in format YYYYMMDD")
-    print("STARTTIME: starting time on the initial date in format HHmm")
-    print("ENDDATE: closing date for range of data to be considered in format YYYYMMDD")
-    print("ENDTIME: last time on the closing date in format HHmm")
+    print("Usage: {:s} DATE POL AZ BAND DATADIR".format(ScriptName))
+    print("\nDATE: date in format YYYYMMDD for which spectrogram will be plotted")
     print("POL: polarisation (only parameters \'H\' or \'V\' are accepted)")
     print("AZ: direction along which measurements were taken, in terms of Azimuth angle)")
     print("    (only 0, 120 or 240 are valid)\n");
@@ -225,10 +217,10 @@ def print_help(ScriptName):
     print("      2 : 327.275 MHz -- 327.525 MHz (bandwidth: 250 KHz)\n")
     print("DATADIR: path of the directory holding the .TXT data files\n")
     print("Example:")
-    print("{:s} 20190415 0700 20190430 2245 H 0 1 ./txtDataFiles\n".format(ScriptName))
+    print("{:s} 20190415 H 0 1 ./txtDataFiles\n".format(ScriptName))
     print("The above command will look for data in directory txtDataFiles found in current")
-    print("directory. Data files should range from 07:00, April 15th, 2019 to 22:45, May")
-    print("5th 2019. The measured polarisation sought is horizontal (H), for direction")
+    print("directory. Data files searched will be in the range 00:00 -- 23:59, April 15th,")
+    print("2019.  The measured polarisation sought is horizontal (H), for direction")
     print("Azimuth = 0 degrees, in the frequency band 1, i.e.  325 MHz -- 329 MHz.")
     print()
 
@@ -287,98 +279,72 @@ def print_runconfig(List, Ideal_NFiles, StartTime, EndTime, TimeRange, Pol, Az, 
 
 ###  BEGIN Parsing of command line arguments  ###
 try:
-    if len(argv) <= 8:
+    if len(argv) <= 5:
         raise OSError
 except OSError:
     print_help(argv[0])
     exit(1)
 
 
-# Check validity of STARTDATE (argv[1]) and STARTTIME (argv[2])
+# Check validity of DATE (argv[1])
 try:
-    if len(argv[1]) < 8 or len(argv[2]) < 4:
+    if len(argv[1]) < 8:
         raise ValueError
 
     year = int(argv[1][:4])
     month = int(argv[1][4:6])
     day = int(argv[1][6:])
-    hour = int(argv[2][:2])
-    minute = int(argv[2][2:])
 
-    StartTime = datetime(year, month, day, hour, minute)
+    StartTime = datetime(year, month, day, 0, 0)
+    EndTime   = datetime(year, month, day, 23, 59)
 
 except ValueError:
     print("Invalid start date/time!")
     exit(2)
 
 
-# Check validity of ENDDATE (argv[3]) and ENDTIME (argv[4])
+# Check validity of POL (argv[2])
 try:
-    if len(argv[3]) < 8 or len(argv[4]) < 4:
-        raise ValueError
-
-    year = int(argv[3][:4])
-    month = int(argv[3][4:6])
-    day = int(argv[3][6:])
-    hour = int(argv[4][:2])
-    minute = int(argv[4][2:])
-
-    EndTime = datetime(year, month, day, hour, minute)
-
-    if EndTime == StartTime:
-        print("Start date/time is equal to end date/time!")
-        raise ValueError
-    if EndTime < StartTime:
-        print("Start date/time is after end date/time!")
-        raise ValueError
-
-except ValueError:
-    print("Invalid end date/time!")
-    exit(3)
-
-
-# Check validity of POL (argv[5])
-try:
-    if argv[5] not in {"H", "V"}:
+    if argv[2] not in {"H", "V"}:
         raise ValueError
 except ValueError:
     print("Invalid polarisation!")
-    exit(4)
+    exit(3)
 
-Pol = argv[5]
+Pol = argv[2]
 
 
-# Check validity of DIR (argv[6])
+# Check validity of DIR (argv[3])
 try:
-    if argv[6] not in {"0", "120", "240"}:
+    if argv[3] not in {"0", "120", "240"}:
         raise ValueError
 except ValueError:
     print("Invalid Azimuth angle for direction!")
-    exit(5)
+    exit(4)
 
-Az = argv[6]
+Az = argv[3]
 
 
-# Check validity of BAND (argv[7])
+# Check validity of BAND (argv[4])
 try:
-    if argv[7] not in {"0", "1", "2"}:
+    if argv[4] not in {"0", "1", "2"}:
         raise ValueError
 except ValueError:
     print("Invalid frequency band label!")
-    exit(6)
+    exit(5)
 
-Band = argv[7]
+Band = argv[4]
 
 
-# Check validity of DATADIR (argv[8])
+# Check validity of DATADIR (argv[5])
 try:
-    if not path.isdir(argv[8]):
+    if not path.isdir(argv[5]):
         raise ValueError
 except ValueError:
-    print("Cannot access {:s}".format(argv[8]))
-    exit(7)
+    print("Cannot access {:s}".format(argv[5]))
+    exit(6)
 
-DataPath = argv[8]
+DataPath = argv[5]
 
 ###  END Parsing of command line arguments  ###
 
@@ -444,47 +410,11 @@ else:
 
 
 
-###  BEGIN Averaging and plotting  ###
+###  BEGIN Plotting  ###
 
-# Subtract amplifier gain
-subtract(InputData, Gain[int(Band)])
 
-# Calculate mean of amplitudes for each frequency
-# (across columns/along rows: axis = 1)
-Mean = mean(InputData, axis=1)
 
-# Plot
-xLowerLim = Frequency[0]
-xUpperLim = Frequency[-1]
 
-plt.figure(1)
-ax1 = plt.subplot(1,1,1)
-plt.title("{:s} -- {:s} (Pol {:s}, Az {:s}{:s}, Band {:s})".format(StartTime.strftime("%H:%M, %d %B %Y"), EndTime.strftime("%H:%M, %d %B %Y"), Pol, Az, chr(176), Band))
-plt.xlabel("Frequency", fontsize=12)
-
-# Custom labels on the frequency axis, since different frequency bands
-# are strictly defined.
-if Band == "0":
-    plt.xlim(1e6, 1e9)
-    plt.xticks([1e6, 125e6, 250e6, 375e6, 500e6, 625e6, 750e6, 875e6, 1e9])
-    formatter = EngFormatter(unit="Hz", places=0)
-elif Band == "1":
-    plt.xlim(325.0e6, 329.0e6)
-    plt.xticks([325.0e6, 325.5e6, 326.0e6, 326.5e6, 327.0e6, 327.5e6, 328.0e6, 328.5e6, 329.0e6])
-    formatter = EngFormatter(unit="Hz", places=1)
-else:
-    plt.xlim(327.275e6, 327.525e6)
-    plt.xticks([327.275e6, 327.350e6, 327.400e6, 327.450e6, 327.525e6])
-    formatter = EngFormatter(unit="Hz", places=3)
-
-ax1.xaxis.set_major_formatter(formatter)
-plt.tick_params(labelsize=14)
-plt.ylabel("Mean Amplitude / dB", fontsize=12)
-plt.grid(True)
-plt.plot(Frequency, Mean, color="blue")
-
-plt.show()
-
-###  END Averaging and plotting  ###
+###  END Plotting  ###
 
 exit(0)
