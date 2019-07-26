@@ -41,9 +41,11 @@ from matplotlib.ticker import EngFormatter
 global NumRows
 NumRows = 461
 
-# Floor of spectrum analyser when amplifer is not working
+# Noise floor level of the spectrum analyzer was at -120dB
+# So, we assumed that if on average, signal was below -118 dB,
+#  it means that amplifier was not functioning properly.
 global SpectrumFloor
-SpectrumFloor = -120.0
+SpectrumFloor = -118.0
 
 # Amplifiers gain in each band
 # +20 dB in band 0
@@ -142,10 +144,7 @@ def CheckAmp(RawData):
 
     Mean *= 0.2
 
-    # Noise floor level of the spectrum analyzer was at -120dB
-    # So, if on average, signal was at that level, it means that
-    # amplifier was not functioning properly.
-    if Mean < -117:
+    if Mean < SpectrumFloor:
         return(1)
     else:
         return(0)
