@@ -48,7 +48,7 @@ NumRows = 461
 
 # Noise floor level of the spectrum analyzer was at -120dB
 # So, we assumed that if on average, signal was below -118 dB,
-#  it means that amplifier was not functioning properly.
+# it means that amplifier was not functioning properly.
 global SpectrumFloor
 SpectrumFloor = -118.0
 
@@ -129,7 +129,7 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
                     else:
                         break
 
-    if len(List) == 1:
+    if len(List) <= 1:
         raise IndexError
 
     EndTime = LastOne
@@ -168,26 +168,40 @@ def LoadData(List, Ideal_NFiles, FreqArray, PowArray):
     try:
         # First file
         fileIdx = 0
-        RawData = loadtxt(fname=List[fileIdx], delimiter=',')
+        while fileIdx < len(List):
+            RawData = loadtxt(fname=List[fileIdx], delimiter=',')
 
-        # Copy frequencies
-        FreqArray[:]  = RawData[:,0]
-        # Copy magnitudes
-        PowArray[:,0] = RawData[:,1]
+            if CheckAmp(RawData) == 0:
+                # Copy frequencies
+                FreqArray[:]  = RawData[:,0]
+                # Copy magnitudes
+                PowArray[:,0] = RawData[:,1]
+
+                fileIdx += 1
+                break
+            else:
+                Rejected.append(Files[fileIdx])
+                fileIdx += 1
+
 
         # Loop through the rest of the list of files, copy data into array
-        for fileIdx in range(1, len(List)):
+        while fileIdx < len(List):
             RawData = loadtxt(fname=List[fileIdx], delimiter=',')
+
             if CheckAmp(RawData) == 0:
                 PowArray = append(PowArray, RawData[:,1].reshape(NumRows,1), axis=1)
             else:
                 Rejected.append(Files[fileIdx])
 
+            fileIdx += 1
+
+
         if len(Rejected) != 0:
             print()
-            print("-> Could not open the following files:")
+            print("-> These files had invalid values of signal power")
+            print("-> indicating amplifier malfunction:")
             for i in range(0, len(Rejected)):
-                print("{:s}".format(Rejected[0].replace(DataPath+"/", "")))
+                print("{:s}".format(Rejected[i].replace(DataPath+"/", "")))
 
             print("\n-> Total number of useful files therefore: {:d}".format(len(Files) - len(Rejected)))
 
