@@ -21,6 +21,12 @@
 #
 # ------------------------------------------------------------------------------
 #
+# Changelog
+#
+# 1.1: 07.08.2019
+#      * Moved creation of numpy arrays to hold data into the function, which
+#        also corrected for the numpy.append() malfunction.
+#
 
 
 from sys import argv
@@ -28,9 +34,10 @@ from os import path
 from time import time
 from random import seed,randint
 from datetime import datetime,timedelta
-from numpy import loadtxt,append,zeros,subtract,mean
+from numpy import loadtxt,append,zeros,subtract,mean,arange,meshgrid
 import matplotlib.pyplot as plt
-from matplotlib.ticker import EngFormatter
+from matplotlib.ticker import EngFormatter,MaxNLocator
+from matplotlib.colors import BoundaryNorm
 
 
 ###
@@ -167,13 +174,13 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
 def CheckAmp(RawData):
     Mean = 0.0
 
-    # Choose 5 random data points
+    # Choose 40 random data points
     for i in range(0,40):
         Mean += RawData[randint(0, NumRows-1), 1]
 
-    Mean *= 0.2
+    Mean *= 0.025
 
-    if Mean < SpectrumFloor:
+    if Mean <= SpectrumFloor:
         return(1)
     else:
         return(0)
@@ -183,68 +190,72 @@ def CheckAmp(RawData):
 
 
 ###  BEGIN Access files and load data into arrays  ###
-def LoadData(List, Ideal_NFiles, FreqArray, PowArray):
+def LoadData(List, Ideal_NFiles):
+
+    FreqArray = []
 
     # List for rejected files
     Rejected = []
 
     try:
-
+        # First file
         fileIdx = 0
-        while fileIdx < len(List):
-            if List[fileIdx] == "0":
-                if fileIdx == 0:
-                    PowArray[:,0] = 0
-                else:
-                    PowArray = append(PowArray, zeros(NumRows,1), axis=1)
-                fileIdx += 1
-            else:
-                RawData = loadtxt(fname=List[fileIdx], delimiter=',')
-                fileIdx += 1
+        if List[fileIdx] == "0":
+            PowArray = zeros((NumRows,1)).reshape(NumRows,1)
+        else:
+            RawData = loadtxt(fname=List[0], delimiter=',')
 
-                if CheckAmp(RawData) == 0:
-                    # Copy frequencies
-                    FreqArray[:]  = RawData[:,0]
-                    # Copy magnitudes
-                    PowArray[:,0] = RawData[:,1]
-                    break
-                else:
-                    Rejected.append(Files[fileIdx-1])
+            # Copy frequencies
+            FreqArray  = RawData[:,0]
+
+            if CheckAmp(RawData) == 0:
+                # Copy magnitudes
+                PowArray = RawData[:,1].reshape(NumRows,1)
+            else:
+                PowArray = zeros((NumRows,1)).reshape(NumRows,1)
+                Rejected.append(List[0])
 
 
         # Loop through the rest of the list of files, copy data into array
+        fileIdx += 1
         while fileIdx < len(List):
             if List[fileIdx] == "0":
-                    PowArray = append(PowArray, RawData[:,1].reshape(NumRows,1), axis=1)
+                PowArray = append(PowArray, zeros((NumRows,1)), axis=1)
             else:
                 RawData = loadtxt(fname=List[fileIdx], delimiter=',')
 
                 if CheckAmp(RawData) == 0:
                     PowArray = append(PowArray, RawData[:,1].reshape(NumRows,1), axis=1)
                 else:
-                    Rejected.append(Files[fileIdx])
+                    PowArray = append(PowArray, zeros((NumRows,1)), axis=1)
+                    Rejected.append(List[fileIdx])
 
             fileIdx += 1
 
 
         if len(Rejected) != 0:
             print()
-            print("-> These files had invalid values of signal power")
-            print("-> indicating amplifier malfunction:")
+            print("-> These files had invalid values of signal power:")
+            print("-> (possibly indicating amplifier malfunction)")
             for i in range(0, len(Rejected)):
                 print("{:s}".format(Rejected[i].replace(DataPath+"/", "")))
 
-            print("\n-> Total number of useful files therefore: {:d}".format(len(Files) - len(Rejected)))
+            print("\n-> Total number of useful files therefore: {:d}".format(len(List) - len(Rejected)))
 
-            if (len(Files) - len(Rejected))/Ideal_NFiles < 1.0:
+            if (len(List) - len(Rejected))/Ideal_NFiles < 1.0:
                 print("-> Number of files expected in time interval: {:d}".format(Ideal_NFiles))
-                print("-> Percentage completeness: {:6.2f}%".format((len(Files) - len(Rejected))/Ideal_NFiles * 100))
+                print("-> Percentage completeness: {:6.2f}%".format((len(List) - len(Rejected))/Ideal_NFiles * 100))
             print()
 
+
+        # Return numpy arrays
+        return(FreqArray, PowArray)
+
+
     except OSError:
-        raise OSError("Error when loading file {:s}".format(Files[fileIdx]))
+        raise OSError("Error when loading file {:s}.".format(List[fileIdx]))
     except IndexError:
-        raise IndexError("Error when loading data from file {:s} into array.".format(Files[fileIdx]))
+        raise IndexError("Error when loading data from file {:s} into array.".format(List[fileIdx]))
 
 ###  END Access files and load data into arrays  ###
 
@@ -314,7 +325,7 @@ def print_runconfig(List, Ideal_NFiles, StartTime, EndTime, TimeRange, Pol, Az, 
     print("Last file:\t{:s}".format(List[lastfileIdx].replace(DataPath+"/", "")))
 
     print()
-    print("Time range (corrected w.r.t available files)and current parameters:")
+    print("Time range and current parameters:")
     print()
     print("{:s}  -->  {:s}".format(StartTime.strftime("%H:%M, %d %B %Y"), EndTime.strftime("%H:%M, %d %B %Y")))
     print()
@@ -455,15 +466,8 @@ if Ans != "Y" and Ans != "y":
     exit(90)
 else:
     # Proceed with normal execution of script
-
-    # Array for frequency axis
-    Frequency = zeros((NumRows))
-
-    # Create array for input power data
-    InputData = zeros((NumRows,1))
-
     try:
-        LoadData(Files, Ideal_numfiles, Frequency, InputData)
+        Frequency, InputData = LoadData(Files, Ideal_numfiles)
     except OSError as error1:
         msg = str(error1)
         print(msg.replace(DataPath+"/", ""))
@@ -479,8 +483,26 @@ else:
 
 ###  BEGIN Plotting  ###
 
+x = arange(0, len(Files), 1)
+y = arange(0, 461, 1)
 
+print("x.shape :")
+print(x.shape)
+print("y.shape :")
+print(y.shape)
+print("InputData.shape :")
+print(InputData.shape)
 
+levels = MaxNLocator(nbins=15).tick_values(InputData.min(), InputData.max())
+cmap = plt.get_cmap('jet')
+norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
+
+fig, ax = plt.subplots(nrows=1)
+img = ax.pcolormesh(x, y, InputData, cmap=cmap, norm=norm)
+fig.colorbar(img, ax=ax)
+ax.set_title('Test')
+
+plt.show()
 
 ###  END Plotting  ###
 
