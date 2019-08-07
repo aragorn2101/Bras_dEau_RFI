@@ -25,6 +25,9 @@
 #
 # 1.1: 03.06.2019
 #      * Added flagging of data for malfunctioned amplifier
+# 1.2: 07.08.2019
+#      * Moved creation of numpy arrays to hold data into the function, which
+#        also corrected for the numpy.append() malfunction.
 #
 
 
@@ -143,14 +146,13 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
 def CheckAmp(RawData):
     Mean = 0.0
 
-    # Choose 5 random data points
-    for i in range(0,5):
+    # Choose 40 random data points
+    for i in range(0,40):
         Mean += RawData[randint(0, NumRows-1), 1]
 
-    Mean *= 0.2
+    Mean *= 0.025
 
-
-    if Mean < SpectrumFloor:
+    if Mean <= SpectrumFloor:
         return(1)
     else:
         return(0)
@@ -160,7 +162,7 @@ def CheckAmp(RawData):
 
 
 ###  BEGIN Access files and load data into arrays  ###
-def LoadData(List, Ideal_NFiles, FreqArray, PowArray):
+def LoadData(List, Ideal_NFiles):
 
     # List for rejected files
     Rejected = []
@@ -170,18 +172,16 @@ def LoadData(List, Ideal_NFiles, FreqArray, PowArray):
         fileIdx = 0
         while fileIdx < len(List):
             RawData = loadtxt(fname=List[fileIdx], delimiter=',')
+            fileIdx += 1
 
             if CheckAmp(RawData) == 0:
                 # Copy frequencies
-                FreqArray[:]  = RawData[:,0]
+                FreqArray = RawData[:,0]
                 # Copy magnitudes
-                PowArray[:,0] = RawData[:,1]
-
-                fileIdx += 1
+                PowArray = RawData[:,1].reshape(NumRows, 1)
                 break
             else:
-                Rejected.append(Files[fileIdx])
-                fileIdx += 1
+                Rejected.append(List[fileIdx-1])
 
 
         # Loop through the rest of the list of files, copy data into array
@@ -191,31 +191,34 @@ def LoadData(List, Ideal_NFiles, FreqArray, PowArray):
             if CheckAmp(RawData) == 0:
                 PowArray = append(PowArray, RawData[:,1].reshape(NumRows,1), axis=1)
             else:
-                Rejected.append(Files[fileIdx])
+                Rejected.append(List[fileIdx])
 
             fileIdx += 1
 
-
+        # Print the list of rejected files, if any
         if len(Rejected) != 0:
             print()
-            print("-> These files had invalid values of signal power")
-            print("-> indicating amplifier malfunction:")
+            print("-> The following files had invalid values of signal power:")
+            print("-> (possibly indicating amplifier malfunction)")
             for i in range(0, len(Rejected)):
                 print("{:s}".format(Rejected[i].replace(DataPath+"/", "")))
 
-            print("\n-> Total number of useful files therefore: {:d}".format(len(Files) - len(Rejected)))
+            print("\n-> Total number of useful files therefore: {:d}".format(len(List) - len(Rejected)))
 
-            if (len(Files) - len(Rejected))/Ideal_NFiles < 1.0:
+            if (len(List) - len(Rejected))/Ideal_NFiles < 1.0:
                 print("-> Number of files expected in time interval: {:d}".format(Ideal_NFiles))
                 print("-> Percentage completeness: {:6.2f}%".format((len(Files) - len(Rejected))/Ideal_NFiles * 100))
             print()
 
 
+        # Return numpy arrays
+        return(FreqArray, PowArray)
+
 
     except OSError:
-        raise OSError("Error when loading file {:s}".format(Files[fileIdx]))
+        raise OSError("Error when loading file {:s}".format(List[fileIdx]))
     except IndexError:
-        raise IndexError("Error when loading data from file {:s} into array.".format(Files[fileIdx]))
+        raise IndexError("Error when loading data from file {:s} into array.".format(List[fileIdx]))
 
 ###  END Access files and load data into arrays  ###
 
@@ -431,20 +434,14 @@ Ideal_numfiles = (ActualTimeRange / 9) // timedelta(minutes=15)
 print_runconfig(Files, Ideal_numfiles, StartTime, EndTime, ActualTimeRange, Pol, Az, Band, DataPath)
 
 # Prompt user
+print()
 Ans = input("Do you wish to proceed with calculations? (y/n)  ")
 if Ans != "Y" and Ans != "y":
     exit(90)
 else:
     # Proceed with normal execution of script
-
-    # Array for frequency axis
-    Frequency = zeros((NumRows))
-
-    # Create array for input power data
-    InputData = zeros((NumRows,1))
-
     try:
-        LoadData(Files, Ideal_numfiles, Frequency, InputData)
+        Frequency, InputData = LoadData(Files, Ideal_numfiles)
     except OSError as error1:
         msg = str(error1)
         print(msg.replace(DataPath+"/", ""))

@@ -43,7 +43,7 @@ NumRows = 461
 
 # Noise floor level of the spectrum analyzer was at -120dB
 # So, we assumed that if on average, signal was below -118 dB,
-#  it means that amplifier was not functioning properly.
+# it means that amplifier was not functioning properly.
 global SpectrumFloor
 SpectrumFloor = -118.0
 
@@ -90,28 +90,49 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
 
     dt1 = timedelta(minutes = 1)
     dt2 = timedelta(minutes = 15)
+    DateTime = StartTime  # temporary storage
 
     # Find the first file
     while True:
         Filename = construct_filename(StartTime, Pol, Az, Band, DataPath)
+
         if path.isfile(Filename):
+
+            # If there is a big gap between start of the day to the start
+            # of the data, fill the gap with null
+            if StartTime > DateTime + dt2:
+                while DateTime < StartTime:
+                    List.append("0")
+                    DateTime += dt2
+
             List.append(Filename)
             break
+
         else:
             if StartTime < EndTime - dt1:
                 StartTime += dt1
             else:
                 raise FileNotFoundError
 
-
     DateTime = StartTime + dt2
 
     while DateTime <= EndTime:
         Filename = construct_filename(DateTime, Pol, Az, Band, DataPath)
+
         if path.isfile(Filename):
-            List.append(Filename)
+
             LastOne = DateTime
+
+            # If there is a big gap between previous file's timestamp and
+            # the next file, fill the gap with null
+            if DateTime > LastOne + dt2:
+                while LastOne < DateTime:
+                    List.append("0")
+                    LastOne += dt2
+
+            List.append(Filename)
             DateTime += dt2
+
         else:
             DateTime -= (dt2 - dt1)
             while True:
@@ -124,10 +145,18 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
                     else:
                         break
 
-    if len(List) == 1:
+    if len(List) <= 1:
         raise IndexError
 
-    EndTime = LastOne
+    # If there is a big gap between the last file's timestamp and
+    # the end of the day, fill the gap with null
+    if EndTime > LastOne + dt2:
+        while LastOne < EndTime:
+            List.append("0")
+            LastOne += dt2
+
+    EndTime = LastOne - dt2
+
     return(StartTime,EndTime)
 
 ###  END Find files and make list  ###
@@ -139,7 +168,7 @@ def CheckAmp(RawData):
     Mean = 0.0
 
     # Choose 5 random data points
-    for i in range(0,5):
+    for i in range(0,40):
         Mean += RawData[randint(0, NumRows-1), 1]
 
     Mean *= 0.2
@@ -160,28 +189,50 @@ def LoadData(List, Ideal_NFiles, FreqArray, PowArray):
     Rejected = []
 
     try:
-        # First file
-        fileIdx = 0
-        RawData = loadtxt(fname=List[fileIdx], delimiter=',')
 
-        # Copy frequencies
-        FreqArray[:]  = RawData[:,0]
-        # Copy magnitudes
-        PowArray[:,0] = RawData[:,1]
+        fileIdx = 0
+        while fileIdx < len(List):
+            if List[fileIdx] == "0":
+                if fileIdx == 0:
+                    PowArray[:,0] = 0
+                else:
+                    PowArray = append(PowArray, zeros(NumRows,1), axis=1)
+                fileIdx += 1
+            else:
+                RawData = loadtxt(fname=List[fileIdx], delimiter=',')
+                fileIdx += 1
+
+                if CheckAmp(RawData) == 0:
+                    # Copy frequencies
+                    FreqArray[:]  = RawData[:,0]
+                    # Copy magnitudes
+                    PowArray[:,0] = RawData[:,1]
+                    break
+                else:
+                    Rejected.append(Files[fileIdx-1])
+
 
         # Loop through the rest of the list of files, copy data into array
-        for fileIdx in range(1, len(List)):
-            RawData = loadtxt(fname=List[fileIdx], delimiter=',')
-            if CheckAmp(RawData) == 0:
-                PowArray = append(PowArray, RawData[:,1].reshape(NumRows,1), axis=1)
+        while fileIdx < len(List):
+            if List[fileIdx] == "0":
+                    PowArray = append(PowArray, RawData[:,1].reshape(NumRows,1), axis=1)
             else:
-                Rejected.append(Files[fileIdx])
+                RawData = loadtxt(fname=List[fileIdx], delimiter=',')
+
+                if CheckAmp(RawData) == 0:
+                    PowArray = append(PowArray, RawData[:,1].reshape(NumRows,1), axis=1)
+                else:
+                    Rejected.append(Files[fileIdx])
+
+            fileIdx += 1
+
 
         if len(Rejected) != 0:
             print()
-            print("-> Could not open the following files:")
+            print("-> These files had invalid values of signal power")
+            print("-> indicating amplifier malfunction:")
             for i in range(0, len(Rejected)):
-                print("{:s}".format(Rejected[0].replace(DataPath+"/", "")))
+                print("{:s}".format(Rejected[i].replace(DataPath+"/", "")))
 
             print("\n-> Total number of useful files therefore: {:d}".format(len(Files) - len(Rejected)))
 
@@ -189,8 +240,6 @@ def LoadData(List, Ideal_NFiles, FreqArray, PowArray):
                 print("-> Number of files expected in time interval: {:d}".format(Ideal_NFiles))
                 print("-> Percentage completeness: {:6.2f}%".format((len(Files) - len(Rejected))/Ideal_NFiles * 100))
             print()
-
-
 
     except OSError:
         raise OSError("Error when loading file {:s}".format(Files[fileIdx]))
@@ -231,6 +280,21 @@ def print_help(ScriptName):
 ###  BEGIN Print runtime configurations  ###
 def print_runconfig(List, Ideal_NFiles, StartTime, EndTime, TimeRange, Pol, Az, Band, DataPath):
 
+    # Look for first file, last file and total number of potentially valid
+    # file in the array
+    firstfileIdx = 0
+    lastfileIdx = 0
+    NumFiles = 0
+    for i in range(0, len(List)):
+        if List[i] == "0":
+            continue
+        else:
+            if firstfileIdx == 0:
+                firstfileIdx = i
+
+            lastfileIdx = i
+            NumFiles += 1
+
     # String to describe polarisation
     if Pol == "H":
         sPol = "horizontal"
@@ -246,12 +310,11 @@ def print_runconfig(List, Ideal_NFiles, StartTime, EndTime, TimeRange, Pol, Az, 
         sBand = "327.275 MHz -- 327.525 MHz (bandwidth: 250 KHz)"
 
     print()
-    print("First file:\t{:s}".format(List[0].replace(DataPath+"/", "")))
-    print("Last file:\t{:s}".format(List[-1].replace(DataPath+"/", "")))
+    print("First file:\t{:s}".format(List[firstfileIdx].replace(DataPath+"/", "")))
+    print("Last file:\t{:s}".format(List[lastfileIdx].replace(DataPath+"/", "")))
 
     print()
-    print("Actual time range (corrected w.r.t available files)")
-    print("and current parameters:")
+    print("Time range (corrected w.r.t available files)and current parameters:")
     print()
     print("{:s}  -->  {:s}".format(StartTime.strftime("%H:%M, %d %B %Y"), EndTime.strftime("%H:%M, %d %B %Y")))
     print()
@@ -261,10 +324,10 @@ def print_runconfig(List, Ideal_NFiles, StartTime, EndTime, TimeRange, Pol, Az, 
     print("Frequency band: {:s}".format(sBand))
 
     print()
-    print("Total number of files in time range: {:d}".format(len(List)))
-    if len(List)/Ideal_NFiles < 1.0:
+    print("Total number of files in time range: {:d}".format(NumFiles))
+    if NumFiles/Ideal_NFiles < 1.0:
         print("Number of files expected in time interval: {:d}".format(Ideal_NFiles))
-        print("Percentage completeness: {:6.2f}%".format(len(List)/Ideal_NFiles * 100))
+        print("Percentage completeness: {:6.2f}%".format(NumFiles/Ideal_NFiles * 100))
     print()
 
     return(0)
@@ -354,7 +417,7 @@ DataPath = argv[5]
 Files = []
 try:
     # Search for files in time range and fill array of file names
-    StartTime,EndTime = find_files(StartTime, EndTime, Pol, Az, Band, DataPath, Files)
+    ActStart,ActEnd = find_files(StartTime, EndTime, Pol, Az, Band, DataPath, Files)
 
 except FileNotFoundError:
     print("Error: Cannot find data files within input time interval with corresponding parameters.")
@@ -371,15 +434,20 @@ except IndexError:
 
 # First print runtime configuration settings and ask user for
 # confirmation before proceeding.
-ActualTimeRange = EndTime - StartTime
+TimeRange = EndTime - StartTime
 
 # Assume that between StartTime and EndTime, files should be uniformly
-# distributed with 15 minutes interval between them. The division by 9
-# is done because there are 9 different possible configurations.
-Ideal_numfiles = (ActualTimeRange / 9) // timedelta(minutes=15)
+# distributed with 15 minutes interval between them.
+Ideal_numfiles = TimeRange // timedelta(minutes=15)
+
 
 # Print runtime configurations/statistics
-print_runconfig(Files, Ideal_numfiles, StartTime, EndTime, ActualTimeRange, Pol, Az, Band, DataPath)
+print_runconfig(Files, Ideal_numfiles, StartTime, EndTime, TimeRange, Pol, Az, Band, DataPath)
+
+# Print file list
+for i in range(0, len(Files)):
+    print("File #{:d} : {:s}".format(i, Files[i]))
+
 
 # Prompt user
 Ans = input("Do you wish to proceed with calculations? (y/n)  ")
