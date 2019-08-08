@@ -2,7 +2,7 @@
 #
 #  Script to make spectrogram plots of the RFI data for the Mauritius Deuterium
 #  Telescope (MDT) location at Bras d'Eau.
-#  Version 1.0
+#  Version 1.1
 #
 #  Copyright (c) 2019 Nitish Ragoomundun, Mauritius
 #
@@ -34,7 +34,7 @@ from os import path
 from time import time
 from random import seed,randint
 from datetime import datetime,timedelta
-from numpy import loadtxt,append,zeros,subtract,mean,arange,meshgrid
+from numpy import loadtxt,append,ones,subtract,mean,arange,meshgrid
 import matplotlib.pyplot as plt
 from matplotlib.ticker import EngFormatter,MaxNLocator
 from matplotlib.colors import BoundaryNorm
@@ -192,8 +192,6 @@ def CheckAmp(RawData):
 ###  BEGIN Access files and load data into arrays  ###
 def LoadData(List, Ideal_NFiles):
 
-    FreqArray = []
-
     # List for rejected files
     Rejected = []
 
@@ -201,18 +199,18 @@ def LoadData(List, Ideal_NFiles):
         # First file
         fileIdx = 0
         if List[fileIdx] == "0":
-            PowArray = zeros((NumRows,1)).reshape(NumRows,1)
+            PowArray = SpectrumFloor * ones((1,NumRows))
         else:
             RawData = loadtxt(fname=List[0], delimiter=',')
 
             # Copy frequencies
-            FreqArray  = RawData[:,0]
+            FreqArray = RawData[:,0]
 
             if CheckAmp(RawData) == 0:
                 # Copy magnitudes
-                PowArray = RawData[:,1].reshape(NumRows,1)
+                PowArray = RawData[:,1].reshape(1,NumRows)
             else:
-                PowArray = zeros((NumRows,1)).reshape(NumRows,1)
+                PowArray = SpectrumFloor * ones((1,NumRows))
                 Rejected.append(List[0])
 
 
@@ -220,14 +218,17 @@ def LoadData(List, Ideal_NFiles):
         fileIdx += 1
         while fileIdx < len(List):
             if List[fileIdx] == "0":
-                PowArray = append(PowArray, zeros((NumRows,1)), axis=1)
+                PowArray = append(PowArray, SpectrumFloor * ones((1,NumRows)), axis=0)
             else:
                 RawData = loadtxt(fname=List[fileIdx], delimiter=',')
 
+                if "FreqArray" not in dir():
+                    FreqArray = RawData[:,0]
+
                 if CheckAmp(RawData) == 0:
-                    PowArray = append(PowArray, RawData[:,1].reshape(NumRows,1), axis=1)
+                    PowArray = append(PowArray, RawData[:,1].reshape(1,NumRows), axis=0)
                 else:
-                    PowArray = append(PowArray, zeros((NumRows,1)), axis=1)
+                    PowArray = append(PowArray, SpectrumFloor * ones((1,NumRows)), axis=0)
                     Rejected.append(List[fileIdx])
 
             fileIdx += 1
@@ -455,11 +456,6 @@ Ideal_numfiles = TimeRange // timedelta(minutes=15)
 # Print runtime configurations/statistics
 print_runconfig(Files, Ideal_numfiles, StartTime, EndTime, TimeRange, Pol, Az, Band, DataPath)
 
-# Print file list
-for i in range(0, len(Files)):
-    print("File #{:d} : {:s}".format(i, Files[i]))
-
-
 # Prompt user
 Ans = input("Do you wish to proceed with calculations? (y/n)  ")
 if Ans != "Y" and Ans != "y":
@@ -483,24 +479,49 @@ else:
 
 ###  BEGIN Plotting  ###
 
-x = arange(0, len(Files), 1)
-y = arange(0, 461, 1)
-
-print("x.shape :")
-print(x.shape)
-print("y.shape :")
-print(y.shape)
 print("InputData.shape :")
 print(InputData.shape)
 
-levels = MaxNLocator(nbins=15).tick_values(InputData.min(), InputData.max())
+# Colour map and spectrum representing range of dB
 cmap = plt.get_cmap('jet')
+levels = MaxNLocator(nbins=64).tick_values(SpectrumFloor, InputData.max())
 norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
 
-fig, ax = plt.subplots(nrows=1)
-img = ax.pcolormesh(x, y, InputData, cmap=cmap, norm=norm)
-fig.colorbar(img, ax=ax)
-ax.set_title('Test')
+# Define figure
+fig = plt.figure(1)
+ax = plt.subplot(1,1,1)
+ax.set_title("RFI spectrogram -- {:s} (Pol {:s}, Az {:s}{:s}, Band {:s})".format(StartTime.strftime("%d %B %Y"), Pol, Az, chr(176), Band))
+
+# x-axis parameters
+x = arange(0, 461, 1)
+ax.set_xlabel("Frequency")
+
+if Band == "0":
+    plt.xlim(1e6, 1e9)
+    plt.xticks([1e6, 125e6, 250e6, 375e6, 500e6, 625e6, 750e6, 875e6, 1e9])
+    formatter = EngFormatter(unit="Hz", places=0)
+elif Band == "1":
+    plt.xlim(325.0e6, 329.0e6)
+    plt.xticks([325.0e6, 325.5e6, 326.0e6, 326.5e6, 327.0e6, 327.5e6, 328.0e6, 328.5e6, 329.0e6])
+    formatter = EngFormatter(unit="Hz", places=1)
+else:
+    plt.xlim(327.275e6, 327.525e6)
+    plt.xticks([327.275e6, 327.350e6, 327.400e6, 327.450e6, 327.525e6])
+    formatter = EngFormatter(unit="Hz", places=3)
+
+ax.xaxis.set_major_formatter(formatter)
+
+
+# y-axis parameters
+y = arange(0, len(Files), 1)
+ax.set_ylabel("Time")
+ax.set_yticks(arange(0, y[-1], 4))  # a tick every hour
+datelist = [(StartTime + i*timedelta(minutes = 60)).strftime("%H:%M") for i in range (0,24)]
+ax.set_yticklabels(datelist)
+
+# Create image
+img = ax.pcolormesh(Frequency, y, InputData, cmap=cmap, norm=norm)
+fig.colorbar(img, ax=ax, label="dB", aspect=40)
 
 plt.show()
 
