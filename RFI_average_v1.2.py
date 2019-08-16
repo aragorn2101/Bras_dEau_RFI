@@ -2,7 +2,7 @@
 #
 #  Script to average and plot RFI data obtained for Bras d'Eau, the location
 #  of the Mauritius Deuterium Telescope (MDT).
-#  Version 1.1
+#  Version 1.2
 #
 #  Copyright (c) 2019 Nitish Ragoomundun, Mauritius
 #
@@ -458,7 +458,7 @@ else:
 ###  BEGIN Averaging and plotting  ###
 
 # Subtract amplifier gain
-subtract(InputData, Gain[int(Band)])
+InputData = subtract(InputData, Gain[int(Band)])
 
 # Calculate mean of amplitudes for each frequency
 # (across columns/along rows: axis = 1)
