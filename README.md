@@ -26,7 +26,7 @@ MRT_20190405_2230H000_2.CSV
 - Matplotlib
 
 
-## Script usage
+## RFI_average script usage
 
 ```
 ./RFI_average_vx.x.py STARTDATE STARTTIME ENDDATE ENDTIME POL AZ BAND DATADIR
@@ -93,6 +93,71 @@ these 2 files, the amplifier was not working properly. The noise floor of the
 spectrum analyzer was observed to be around -120dB. So, the script flags all
 the data files containing average amplitudes below -117dB, as this will
 indicate that the amplifier was not working during this observation. A value of
--117dB is used because in certain data files the amplitudes were at this level.
+-118dB is used because in certain data files the amplitudes were at this level.
 The amplifier level for bandwidth 0 is +20dB, while it is +40dB for bandwidths
 1 and 2.
+
+
+## RFI_spectrogram script usage
+```
+Usage: ./RFI_spectrogram_vx.x.py DATE POL AZ BAND DATADIR
+
+DATE: date in format YYYYMMDD for which spectrogram will be plotted
+POL: polarisation (only parameters 'H' or 'V' are accepted)
+AZ: direction along which measurements were taken, in terms of Azimuth angle)
+    (only 0, 120 or 240 are valid)
+
+BAND: frequency band of measurements, the accepted inputs for this parameter
+      are only 0, 1 or 2. The meaning of each label are as follows:
+
+      0 :       1 MHz --       1 GHz (bandwidth: 999 MHz)
+      1 :     325 MHz --     329 MHz (bandwidth:   4 MHz)
+      2 : 327.275 MHz -- 327.525 MHz (bandwidth: 250 KHz)
+
+DATADIR: path of the directory holding the .TXT data files
+
+Example:
+./RFI_spectrogram_v1.3.py 20190307 H 240 1 ./txtDataFiles
+
+The above command will look for data in directory txtDataFiles found in current
+directory. Data files searched will be in the range 00:00 -- 23:59, January
+15th, 2019.  The measured polarisation sought is vertical (V), for direction
+Azimuth = 240 degrees, in the frequency band 1, i.e.  325 MHz -- 329 MHz.
+```
+**Example:**
+```
+$ ./RFI_average_v1.3.py 20190424 H 0 1 ./txtDataFiles
+
+First file:     MRT_20190424_0648H000_1.TXT
+Last file:      MRT_20190424_2348H000_1.TXT
+
+Time range and current parameters:
+
+00:00, 24 April 2019  -->  23:59, 24 April 2019
+
+Length of time interval:  1.00 day(s)
+Polarisation: horizontal
+Azimuth: 0 deg
+Frequency band: 325 MHz -- 329 MHz (bandwidth: 4 MHz)
+
+Total number of files in time range: 69
+Number of files expected in time interval: 95
+Percentage completeness:  72.63%
+
+Do you wish to proceed with calculations? (y/n)  y
+
+-> These files had invalid values of signal power:
+-> (possibly indicating amplifier malfunction)
+MRT_20190424_0818H000_1.TXT
+MRT_20190424_0833H000_1.TXT
+MRT_20190424_1133H000_1.TXT
+
+-> Total number of useful files therefore: 94
+-> Number of files expected in time interval: 95
+-> Percentage completeness:  98.95%
+```
+
+The output from the example informs the user that, according to available data
+files, the range will be restricted to *00:00, 24 April 2019  -->  23:59, 24
+April 2019*.  There were 3 rejected files within this range according to the
+power levels indicating an amplifier malfunction, as explained before.

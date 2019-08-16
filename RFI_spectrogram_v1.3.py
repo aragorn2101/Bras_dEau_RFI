@@ -2,7 +2,7 @@
 #
 #  Script to make spectrogram plots of the RFI data for the Mauritius Deuterium
 #  Telescope (MDT) location at Bras d'Eau.
-#  Version 1.1
+#  Version 1.3
 #
 #  Copyright (c) 2019 Nitish Ragoomundun, Mauritius
 #
@@ -29,6 +29,9 @@
 # 1.2: 13.08.2019
 #      * Plot frequency on y-axis and time on x-axis to better conform to
 #        standards for spectrogram plots.
+#
+# 1.3: 16.08.2019
+#      * Added correction for amplifier gains.
 #
 
 
@@ -280,11 +283,11 @@ def print_help(ScriptName):
     print("      2 : 327.275 MHz -- 327.525 MHz (bandwidth: 250 KHz)\n")
     print("DATADIR: path of the directory holding the .TXT data files\n")
     print("Example:")
-    print("{:s} 20190415 H 0 1 ./txtDataFiles\n".format(ScriptName))
+    print("{:s} 20190307 H 240 1 ./txtDataFiles\n".format(ScriptName))
     print("The above command will look for data in directory txtDataFiles found in current")
-    print("directory. Data files searched will be in the range 00:00 -- 23:59, April 15th,")
-    print("2019.  The measured polarisation sought is horizontal (H), for direction")
-    print("Azimuth = 0 degrees, in the frequency band 1, i.e.  325 MHz -- 329 MHz.")
+    print("directory. Data files searched will be in the range 00:00 -- 23:59, March 7th,")
+    print("2019.  The measured polarisation sought is vertical (V), for direction")
+    print("Azimuth = 240 degrees, in the frequency band 1, i.e.  325 MHz -- 329 MHz.")
     print()
 
     return(0)
@@ -482,9 +485,12 @@ else:
 
 ###  BEGIN Plotting  ###
 
+# Subtract amplifier gain
+InputData = subtract(InputData, Gain[int(Band)])
+
 # Colour map and spectrum representing range of dB
 cmap = plt.get_cmap('jet')
-levels = MaxNLocator(nbins=64).tick_values(SpectrumFloor, InputData.max())
+levels = MaxNLocator(nbins=64).tick_values(InputData.min(), InputData.max())
 norm = BoundaryNorm(levels, ncolors=cmap.N, clip=True)
 
 # Define figure
