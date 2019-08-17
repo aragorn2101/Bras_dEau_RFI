@@ -201,6 +201,8 @@ def LoadData(List, Ideal_NFiles):
     # List for rejected files
     Rejected = []
 
+    NumFiles = 0
+
     try:
         # First file
         fileIdx = 0
@@ -215,6 +217,7 @@ def LoadData(List, Ideal_NFiles):
             if CheckAmp(RawData) == 0:
                 # Copy magnitudes
                 PowArray = RawData[:,1].reshape(NumRows,1)
+                NumFiles += 1
             else:
                 PowArray = SpectrumFloor * ones((NumRows,1))
                 Rejected.append(List[0])
@@ -233,6 +236,7 @@ def LoadData(List, Ideal_NFiles):
 
                 if CheckAmp(RawData) == 0:
                     PowArray = append(PowArray, RawData[:,1].reshape(NumRows,1), axis=1)
+                    NumFiles += 1
                 else:
                     PowArray = append(PowArray, SpectrumFloor * ones((NumRows,1)), axis=1)
                     Rejected.append(List[fileIdx])
@@ -247,11 +251,11 @@ def LoadData(List, Ideal_NFiles):
             for i in range(0, len(Rejected)):
                 print("{:s}".format(Rejected[i].replace(DataPath+"/", "")))
 
-            print("\n-> Total number of useful files therefore: {:d}".format(len(List) - len(Rejected)))
+            print("\n-> Total number of useful files therefore: {:d}".format(NumFiles))
 
-            if (len(List) - len(Rejected))/Ideal_NFiles < 1.0:
+            if (NumFiles - len(Rejected))/Ideal_NFiles < 1.0:
                 print("-> Number of files expected in time interval: {:d}".format(Ideal_NFiles))
-                print("-> Percentage completeness: {:6.2f}%".format((len(List) - len(Rejected))/Ideal_NFiles * 100))
+                print("-> Percentage completeness: {:6.2f}%".format((NumFiles - len(Rejected))/Ideal_NFiles * 100))
             print()
 
 

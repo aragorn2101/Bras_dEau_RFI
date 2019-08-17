@@ -10,7 +10,7 @@ configurations. The txtDataFiles contains .TXT files with the raw frequency and
 power measurements in a comma separated format. It is the **.TXT files** which
 must be passed to the scripts. The filenames are coded. E.g.
 ```
-MRT_20190405_2230H000_2.CSV
+MRT_20190405_2230H000_2.TXT
 ```
 **MRT:** site at which measurements were taken - Bras d'Eau </br>
 **20190405_2230:** time and date at which file was written - 22:30, April 5th, 2019 </br>
@@ -27,6 +27,9 @@ MRT_20190405_2230H000_2.CSV
 
 
 ## RFI_average script usage
+
+The script accumulates RFI spectral data over a user-input time interval and
+plots a graph of RFI power in dB against frequency.
 
 ```
 ./RFI_average_vx.x.py STARTDATE STARTTIME ENDDATE ENDTIME POL AZ BAND DATADIR
@@ -52,7 +55,7 @@ DATADIR: path of the directory holding the .TXT data files.
 
 **Example:**
 ```
-./RFI_average_v1.1.py 20190415 0700 20190430 2245 H 0 1 ./txtDataFiles
+$ ./RFI_average_v1.2.py 20190415 0700 20190430 2245 H 0 1 ./txtDataFiles
 ```
 The above command will look for data in directory txtDataFiles found in current
 directory. Data files should range from 07:00, April 15th, 2019 to 22:45, May
@@ -79,9 +82,9 @@ Total number of files in time range: 95
 Do you wish to proceed with calculations? (y/n)  y
 
 -> Could not open the following files:
-MRT_20190424_0818H000_1.TXT
-MRT_20190424_0818H000_1.TXT
-MRT_20190424_0818H000_1.TXT
+TXT/MRT_20190424_0818H000_1.TXT
+TXT/MRT_20190424_0833H000_1.TXT
+TXT/MRT_20190424_1133H000_1.TXT
 
 -> Total number of useful files therefore: 92
 ```
@@ -99,6 +102,10 @@ The amplifier level for bandwidth 0 is +20dB, while it is +40dB for bandwidths
 
 
 ## RFI_spectrogram script usage
+
+This script produces a spectrogram of the RFI data for a single day. Thus, it
+takes as input only a date and will consider data between 00:00 and 23:59 of
+that day.
 ```
 Usage: ./RFI_spectrogram_vx.x.py DATE POL AZ BAND DATADIR
 
@@ -158,6 +165,6 @@ MRT_20190424_1133H000_1.TXT
 ```
 
 The output from the example informs the user that, according to available data
-files, the range will be restricted to *00:00, 24 April 2019  -->  23:59, 24
+files, the range will be restricted to *00:00 -->  23:59, 24
 April 2019*.  There were 3 rejected files within this range according to the
 power levels indicating an amplifier malfunction, as explained before.
