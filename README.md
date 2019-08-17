@@ -159,9 +159,9 @@ MRT_20190424_0818H000_1.TXT
 MRT_20190424_0833H000_1.TXT
 MRT_20190424_1133H000_1.TXT
 
--> Total number of useful files therefore: 94
+-> Total number of useful files therefore: 66
 -> Number of files expected in time interval: 95
--> Percentage completeness:  98.95%
+-> Percentage completeness:  66.32%
 ```
 
 The output from the example informs the user that, according to available data
