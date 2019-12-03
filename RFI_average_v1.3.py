@@ -2,7 +2,7 @@
 #
 #  Script to average and plot RFI data obtained for Bras d'Eau, the location
 #  of the Mauritius Deuterium Telescope (MDT).
-#  Version 1.2
+#  Version 1.3
 #
 #  Copyright (c) 2019 Nitish Ragoomundun, Mauritius
 #
@@ -28,6 +28,9 @@
 # 1.2: 07.08.2019
 #      * Moved creation of numpy arrays to hold data into the function, which
 #        also corrected for the numpy.append() malfunction.
+# 1.3: 03.12.2019
+#      * Added output to text file for average.
+#      * Subtract amplification according to experimental data.
 #
 
 
@@ -70,7 +73,7 @@ seed(time())
 ###  Subsidiary Functions
 ###
 
-###  BEGIN Construct filename  ###
+###  BEGIN Function: Construct filename  ###
 def construct_filename(DateTime, Pol, Az, Band, DataPath):
     MiddleName = DateTime.strftime("%Y%m%d_%H%M") + Pol
 
@@ -87,11 +90,11 @@ def construct_filename(DateTime, Pol, Az, Band, DataPath):
     else:
         return(DataPath + "/MRT_" + MiddleName + ".TXT")
 
-###  END Construct filename  ###
+###  END Function: Construct filename  ###
 
 
 
-###  BEGIN Find files and make list  ###
+###  BEGIN Function: Find files and make list  ###
 def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
     # Clean list
     List.clear()
@@ -138,11 +141,11 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
     EndTime = LastOne
     return(StartTime,EndTime)
 
-###  END Find files and make list  ###
+###  END Function: Find files and make list  ###
 
 
 
-###  BEGIN Check if amplifier was working correctly  ###
+###  BEGIN Function: Check if amplifier was working correctly  ###
 def CheckAmp(RawData):
     Mean = 0.0
 
@@ -157,11 +160,11 @@ def CheckAmp(RawData):
     else:
         return(0)
 
-###  END Check if amplifier was working correctly  ###
+###  END Function: Check if amplifier was working correctly  ###
 
 
 
-###  BEGIN Access files and load data into arrays  ###
+###  BEGIN Function: Access files and load data into arrays  ###
 def LoadData(List, Ideal_NFiles):
 
     # List for rejected files
@@ -220,11 +223,28 @@ def LoadData(List, Ideal_NFiles):
     except IndexError:
         raise IndexError("Error when loading data from file {:s} into array.".format(List[fileIdx]))
 
-###  END Access files and load data into arrays  ###
+###  END Function: Access files and load data into arrays  ###
 
 
 
-###  BEGIN Print help  ###
+###  BEGIN Function: Subtract amplifier gain from raw data  ###
+def subtract_AmpGain(InputData, Band):
+
+    # Open amplifier gain data
+    AmpGain = loadtxt(fname="AmpGain_band"+Band+".csv", delimiter=',')
+
+    # Subtract
+    Corrected = InputData
+    for col in range(0, InputData.shape[1]):
+        Corrected[:,col] = subtract(InputData[:,col], AmpGain[:,1])
+
+    return(Corrected)
+
+###  END Function: Subtract amplifier gain from raw data  ###
+
+
+
+###  BEGIN Function: Print help  ###
 def print_help(ScriptName):
     print()
     print("Usage: {:s} STARTDATE STARTTIME ENDDATE ENDTIME POL AZ BAND DATADIR".format(ScriptName))
@@ -250,11 +270,11 @@ def print_help(ScriptName):
     print()
 
     return(0)
-###  END Print help  ###
+###  END Function: Print help  ###
 
 
 
-###  BEGIN Print runtime configurations  ###
+###  BEGIN Function: Print runtime configurations  ###
 def print_runconfig(List, Ideal_NFiles, StartTime, EndTime, TimeRange, Pol, Az, Band, DataPath):
 
     # String to describe polarisation
@@ -294,7 +314,7 @@ def print_runconfig(List, Ideal_NFiles, StartTime, EndTime, TimeRange, Pol, Az, 
     print()
 
     return(0)
-###  END Print runtime configurations  ###
+###  END Function: Print runtime configurations  ###
 
 
 
@@ -397,6 +417,15 @@ except ValueError:
 
 DataPath = argv[8]
 
+
+# Check if amplifier gain data files are accessible
+try:
+    if not path.isfile("AmpGain_band"+Band+".csv"):
+        raise FileNotFoundError
+except FileNotFoundError:
+    print("Amplifier gain data file {:s} missing!".format("AmpGain_band"+Band+".csv"))
+    exit(8)
+
 ###  END Parsing of command line arguments  ###
 
 
@@ -410,10 +439,10 @@ try:
 
 except FileNotFoundError:
     print("Error: Cannot find data files within input time interval with corresponding parameters.")
-    exit(80)
+    exit(90)
 except IndexError:
     print("Error: Time range contains only 1 file for corresponding parameters, cannot average!")
-    exit(81)
+    exit(91)
 
 ###  END Browse through file names  ###
 
@@ -437,7 +466,7 @@ print_runconfig(Files, Ideal_numfiles, StartTime, EndTime, ActualTimeRange, Pol,
 print()
 Ans = input("Do you wish to proceed with calculations? (y/n)  ")
 if Ans != "Y" and Ans != "y":
-    exit(90)
+    exit(100)
 else:
     # Proceed with normal execution of script
     try:
@@ -445,26 +474,50 @@ else:
     except OSError as error1:
         msg = str(error1)
         print(msg.replace(DataPath+"/", ""))
-        exit(91)
+        exit(101)
     except IndexError as error2:
         msg = str(error2)
         print(msg.replace(DataPath+"/", ""))
-        exit(92)
+        exit(102)
 
 ###  END Opening files and loading data in array  ###
 
 
 
+###  BEGIN Creating file to output results  ###
+outfilename = argv[1] + "_" + argv[2] + "-" + argv[3] + "_" + argv[4] + "_" + Pol + Az + "_" + Band + ".csv"
+
+try:
+    fout = open(outfilename, 'w')
+except OSError:
+    print("Cannot write file {:s} for output results!".format(outfilename))
+    exit(111)
+
+###  END Creating file to output results  ###
+
+
+
 ###  BEGIN Averaging and plotting  ###
 
-# Subtract amplifier gain
-InputData = subtract(InputData, Gain[int(Band)])
+# Subtract amplifier gain for the relevant band
+InputData = subtract_AmpGain(InputData, Band)
 
 # Calculate mean of amplitudes for each frequency
 # (across columns/along rows: axis = 1)
 Mean = mean(InputData, axis=1)
 
+
+# Output results to csv file
+print("Writing output results to {:s}".format(outfilename))
+for i in range(0, len(Frequency)):
+    fout.write("{:f},{:f}\n".format(Frequency[i], Mean[i]))
+
+fout.close()
+
+
 # Plot
+print("Generating plot ...")
+
 xLowerLim = Frequency[0]
 xUpperLim = Frequency[-1]
 
