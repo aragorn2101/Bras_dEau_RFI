@@ -29,7 +29,9 @@ MRT_20190405_2230H000_2.TXT
 ## RFI_average script usage
 
 The script accumulates RFI spectral data over a user-input time interval and
-plots a graph of RFI power in dB against frequency.
+plots a graph of RFI power in dBm against frequency. The script also outputs
+the results in a csv file with two columns, namely frequency in Hz and average
+power in dBm.
 
 ```
 ./RFI_average_vx.x.py STARTDATE STARTTIME ENDDATE ENDTIME POL AZ BAND DATADIR
@@ -55,7 +57,7 @@ DATADIR: path of the directory holding the .TXT data files.
 
 **Example:**
 ```
-$ ./RFI_average_v1.2.py 20190415 0700 20190430 2245 H 0 1 ./txtDataFiles
+$ ./RFI_average_v1.3.py 20190415 0700 20190430 2245 H 0 1 ./txtDataFiles
 ```
 The above command will look for data in directory txtDataFiles found in current
 directory. Data files should range from 07:00, April 15th, 2019 to 22:45, May

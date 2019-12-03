@@ -543,7 +543,7 @@ else:
 
 ax1.xaxis.set_major_formatter(formatter)
 plt.tick_params(labelsize=14)
-plt.ylabel("Mean Amplitude / dB", fontsize=12)
+plt.ylabel("Mean Amplitude / dBm", fontsize=12)
 plt.grid(True)
 plt.plot(Frequency, Mean, color="blue")
 
