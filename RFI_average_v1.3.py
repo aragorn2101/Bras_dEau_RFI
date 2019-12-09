@@ -2,6 +2,8 @@
 #
 #  Script to average and plot RFI data obtained for Bras d'Eau, the location
 #  of the Mauritius Deuterium Telescope (MDT).
+#  The plot is made for only one direction and one polarisation. The result of
+#  the average is output to a file named according to the period concerned.
 #  Version 1.3
 #
 #  Copyright (c) 2019 Nitish Ragoomundun, Mauritius
@@ -30,7 +32,7 @@
 #        also corrected for the numpy.append() malfunction.
 # 1.3: 03.12.2019
 #      * Added output to text file for average.
-#      * Subtract amplification according to experimental data.
+#      * Subtract amplifier gain according to experimental data.
 #
 
 
@@ -57,13 +59,6 @@ NumRows = 461
 # it means that amplifier was not functioning properly.
 global SpectrumFloor
 SpectrumFloor = -118.0
-
-# Amplifiers gain in each band
-# +20 dB in band 0
-# +40 dB in bands 1 and 2
-global Gain
-Gain = [20, 40, 40]
-#        0   1   2
 
 # Seed RNG
 seed(time())
