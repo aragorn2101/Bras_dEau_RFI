@@ -28,7 +28,6 @@
 
 from sys import argv
 from os import path
-from time import time
 from random import seed,randint
 from datetime import datetime,timedelta
 from numpy import loadtxt,append,zeros,subtract,mean
@@ -51,7 +50,7 @@ global SpectrumFloor
 SpectrumFloor = -118.0
 
 # Seed RNG
-seed(time())
+seed(21)
 
 
 ###

@@ -38,7 +38,6 @@
 
 from sys import argv
 from os import path
-from time import time
 from random import seed,randint
 from datetime import datetime,timedelta
 from numpy import loadtxt,append,zeros,subtract,mean
@@ -61,7 +60,7 @@ global SpectrumFloor
 SpectrumFloor = -118.0
 
 # Seed RNG
-seed(time())
+seed(21)
 
 
 ###
@@ -272,12 +271,6 @@ def print_help(ScriptName):
 ###  BEGIN Function: Print runtime configurations  ###
 def print_runconfig(List, Ideal_NFiles, StartTime, EndTime, TimeRange, Pol, Az, Band, DataPath):
 
-    # String to describe polarisation
-    if Pol == "H":
-        sPol = "horizontal"
-    else:
-        sPol = "vertical"
-
     # String to describe frequency bandwidth
     if Band == "0":
         sBand = "1 MHz -- 1 GHz (bandwidth: 999 MHz)"
@@ -297,7 +290,7 @@ def print_runconfig(List, Ideal_NFiles, StartTime, EndTime, TimeRange, Pol, Az, 
     print("{:s}  -->  {:s}".format(StartTime.strftime("%H:%M, %d %B %Y"), EndTime.strftime("%H:%M, %d %B %Y")))
     print()
     print("Length of time interval:  {:.2f} day(s)".format(TimeRange / timedelta(hours=24)))
-    print("Polarisation: {:s}".format(sPol))
+    print("Polarisation: {:s}".format(Pol))
     print("Azimuth: {:s} deg".format(Az))
     print("Frequency band: {:s}".format(sBand))
 
@@ -517,6 +510,7 @@ xLowerLim = Frequency[0]
 xUpperLim = Frequency[-1]
 
 plt.figure(1)
+plt.tight_layout()
 ax1 = plt.subplot(1,1,1)
 plt.title("{:s} -- {:s} (Pol {:s}, Az {:s}{:s}, Band {:s})".format(StartTime.strftime("%H:%M, %d %B %Y"), EndTime.strftime("%H:%M, %d %B %Y"), Pol, Az, chr(176), Band))
 plt.xlabel("Frequency", fontsize=12)
