@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 #
-#  --  UNDER CONSTRUCTION  --
-#
 #  Script to average and plot RFI data obtained for Bras d'Eau, the location
 #  of the Mauritius Deuterium Telescope (MDT).
 #  A plot is made for each polarisation (H and V). Each plot contains the
@@ -30,6 +28,7 @@
 
 from sys import argv
 from os import path
+from time import time
 from random import seed,randint
 from datetime import datetime,timedelta
 from numpy import loadtxt,append,zeros,subtract,mean
@@ -52,7 +51,7 @@ global SpectrumFloor
 SpectrumFloor = -118.0
 
 # Seed RNG
-seed(21)
+seed(time())
 
 
 ###
@@ -441,13 +440,6 @@ else:
     # Proceed with normal execution of script
     try:
         Frequency, InputData = LoadData(Files)
-        print()
-        print(Frequency.shape)
-        print()
-        for i in range(0,2):
-            for j in range(0,3):
-                print("{:d},{:d} -- ({:d},{:d})".format(i, j, InputData[i*3 + j].shape[0], InputData[i*3 + j].shape[1]))
-
     except OSError as error1:
         msg = str(error1)
         print(msg.replace(DataPath+"/", ""))
@@ -495,6 +487,7 @@ for i in range(0, len(InputData)):
 
 
 # Output results to csv file
+print()
 print("Writing output results for Polarisation H to {:s}".format(outfilenameH))
 for k in range(0, len(Frequency)):
     fout_H.write("{:f}".format(Frequency[k]))
@@ -514,5 +507,51 @@ for k in range(0, len(Frequency)):
 fout_V.close()
 
 
+# Plot
+print("Generating plots ...")
+
+xLowerLim = Frequency[0]
+xUpperLim = Frequency[-1]
+
+fig = [[],[]]
+ax  = [[],[]]
+colours = [ "orange", "blue", "green"]
+
+for i in range(0,2):  # Pol
+
+    fig[i], ax[i] = plt.subplots(1,1)
+    plt.tight_layout()
+
+    ax[i].set_title("{:s} -- {:s} (Pol: {:s}, Band {:s})".format(StartTime.strftime("%d %B %Y"), EndTime.strftime("%d %B %Y"), Pol[i], Band))
+    ax[i].set_xlabel("Frequency", fontsize=12)
+
+# Custom labels on the frequency axis, since different frequency bands
+# are strictly defined.
+    if Band == "0":
+        ax[i].set_xlim(1e6, 1e9)
+        ax[i].set_xticks([1e6, 125e6, 250e6, 375e6, 500e6, 625e6, 750e6, 875e6, 1e9])
+        formatter = EngFormatter(unit="Hz", places=0)
+    elif Band == "1":
+        ax[i].set_xlim(325.0e6, 329.0e6)
+        ax[i].set_xticks([325.0e6, 325.5e6, 326.0e6, 326.5e6, 327.0e6, 327.5e6, 328.0e6, 328.5e6, 329.0e6])
+        formatter = EngFormatter(unit="Hz", places=1)
+    else:
+        ax[i].set_xlim(327.275e6, 327.525e6)
+        ax[i].set_xticks([327.275e6, 327.350e6, 327.400e6, 327.450e6, 327.525e6])
+        formatter = EngFormatter(unit="Hz", places=3)
+
+    ax[i].xaxis.set_major_formatter(formatter)
+    ax[i].tick_params(labelsize=14)
+    ax[i].set_ylabel("Mean Amplitude / dBm", fontsize=12)
+    ax[i].grid(True)
+    for j in range(0,3):  # Az
+        ax[i].plot(Frequency, Mean[i*3 + j], color=colours[j], label="Az = "+Az[j]+chr(176))
+
+    # Legend
+    ax[i].legend(loc="upper right", bbox_to_anchor=(0.93,0.97), frameon=True)
+
+plt.show()
+
+###  END Averaging and plotting  ###
 
 exit(0)
