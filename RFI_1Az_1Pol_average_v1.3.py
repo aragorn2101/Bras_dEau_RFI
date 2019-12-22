@@ -195,7 +195,7 @@ def LoadData(List, Ideal_NFiles):
         # Print the list of rejected files, if any
         if len(Rejected) != 0:
             print()
-            print("-> The following files had invalid values of signal power:")
+            print("-> The following file(s) had invalid values of signal power:")
             print("-> (possibly indicating amplifier malfunction)")
             for i in range(0, len(Rejected)):
                 print("{:s}".format(Rejected[i].replace(DataPath+"/", "")))

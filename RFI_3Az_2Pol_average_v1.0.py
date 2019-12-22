@@ -96,6 +96,7 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
             if StartTime < EndTime - dt1:
                 StartTime += dt1
             else:
+                print("Current configuration -- Pol: {:s}; Az = {:s}".format(Pol, Az))
                 raise FileNotFoundError
 
 
@@ -120,6 +121,7 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
                         break
 
     if len(List) <= 1:
+        print("Current configuration -- Pol: {:s}; Az = {:s}".format(Pol, Az))
         raise IndexError
 
     EndTime = LastOne
@@ -190,9 +192,9 @@ def LoadData(List):
                 if (len(Rejected) != 0):
                     print()
                     print("-> For configuration -- Polarisation: {:s}; Azimuth: {:s} deg,".format(Pol[i], Az[j]))
-                    print("-> There were  {:d}  rejected files:-".format(len(Rejected)))
-                    for i in range(0, len(Rejected)):
-                        print("{:s}".format(Rejected[i].replace(DataPath+"/", "")))
+                    print("-> There were  {:d}  rejected file(s):-".format(len(Rejected)))
+                    for k in range(0, len(Rejected)):
+                        print("{:s}".format(Rejected[k].replace(DataPath+"/", "")))
                     print("-----------------------------------------------------------------------")
 
 
@@ -205,9 +207,9 @@ def LoadData(List):
 
 
     except OSError:
-        raise OSError("Error when loading file {:s}".format(List[fileIdx]))
+        raise OSError("Error when loading file {:s}".format(List[i*3 + j][fileIdx]))
     except IndexError:
-        raise IndexError("Error when loading data from file {:s} into array.".format(List[fileIdx]))
+        raise IndexError("Error when loading data from file {:s} into array.".format(List[i*3 + j][fileIdx]))
 
 ###  END Function: Access files and load data into arrays  ###
 
@@ -344,9 +346,6 @@ try:
 
     EndTime = datetime(year, month, day, hour, minute)
 
-    if EndTime == StartTime:
-        print("Start date/time is equal to end date/time!")
-        raise ValueError
     if EndTime < StartTime:
         print("Start date/time is after end date/time!")
         raise ValueError
@@ -414,7 +413,6 @@ try:
 
             # Calculate actual time range for each (Pol, Az) combination
             ActualTimeRanges.append(tmp_End - tmp_Start)
-
 
             # Add list of files to main array
             Files.append(tmp_Files)
