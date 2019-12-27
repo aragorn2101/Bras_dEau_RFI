@@ -24,7 +24,11 @@
 #
 # ------------------------------------------------------------------------------
 #
-
+#  Changelog
+#
+#  1.1: 26.12.2019
+#       *
+#
 
 from sys import argv
 from os import path
@@ -80,9 +84,6 @@ def construct_filename(DateTime, Pol, Az, Band, DataPath):
 
 ###  BEGIN Function: Find files and make list  ###
 def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
-    # Clean list
-    List.clear()
-
     dt1 = timedelta(minutes = 1)
     dt2 = timedelta(minutes = 15)
 
@@ -96,7 +97,7 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
             if StartTime < EndTime - dt1:
                 StartTime += dt1
             else:
-                print("Current configuration -- Pol: {:s}; Az = {:s}".format(Pol, Az))
+                print("For configuration -- Pol: {:s}; Az = {:s}".format(Pol, Az))
                 raise FileNotFoundError
 
 
@@ -121,7 +122,7 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
                         break
 
     if len(List) <= 1:
-        print("Current configuration -- Pol: {:s}; Az = {:s}".format(Pol, Az))
+        print("For configuration -- Pol: {:s}; Az = {:s}".format(Pol, Az))
         raise IndexError
 
     EndTime = LastOne
@@ -154,18 +155,18 @@ def CheckAmp(RawData):
 def LoadData(List):
 
     # list of numpy arrays
-    InputData = []
+    Data = []
 
     try:
-        for i in range(0,2):  # Pol
-            for j in range(0,3):  # Az
+        for p in range(0,2):  # Pol
+            for a in range(0,3):  # Az
                 # List for rejected files
                 Rejected = []
 
                 # First file
                 fileIdx = 0
-                while fileIdx < len(List[i*3 + j]):
-                    RawData = loadtxt(fname=List[i*3 + j][fileIdx], delimiter=',')
+                while fileIdx < len(List[p*3 + a]):
+                    RawData = loadtxt(fname=List[p*3 + a][fileIdx], delimiter=',')
                     fileIdx += 1
 
                     if CheckAmp(RawData) == 0:
@@ -175,41 +176,41 @@ def LoadData(List):
                         PowArray = RawData[:,1].reshape(NumRows, 1)
                         break
                     else:
-                        Rejected.append(List[i*3 + j][fileIdx-1])
+                        Rejected.append(List[p*3 + a][fileIdx-1])
 
                 # Loop through the rest of the list of files, copy data into array
-                while fileIdx < len(List[i*3 + j]):
-                    RawData = loadtxt(fname=List[i*3 + j][fileIdx], delimiter=',')
+                while fileIdx < len(List[p*3 + a]):
+                    RawData = loadtxt(fname=List[p*3 + a][fileIdx], delimiter=',')
 
                     if CheckAmp(RawData) == 0:
                         PowArray = append(PowArray, RawData[:,1].reshape(NumRows,1), axis=1)
                     else:
-                        Rejected.append(List[i*3 + j][fileIdx])
+                        Rejected.append(List[p*3 + a][fileIdx])
 
                     fileIdx += 1
 
                 # Print the list of rejected files, if any
                 if (len(Rejected) != 0):
                     print()
-                    print("-> For configuration -- Polarisation: {:s}; Azimuth: {:s} deg,".format(Pol[i], Az[j]))
+                    print("-> For configuration -- Polarisation: {:s}; Azimuth: {:s} deg,".format(Pol[p], Az[a]))
                     print("-> There were  {:d}  rejected file(s):-".format(len(Rejected)))
-                    for k in range(0, len(Rejected)):
-                        print("{:s}".format(Rejected[k].replace(DataPath+"/", "")))
+                    for i in range(0, len(Rejected)):
+                        print("{:s}".format(Rejected[i].replace(DataPath+"/", "")))
                     print("-----------------------------------------------------------------------")
 
 
                 # Add numpy power array to list
-                InputData.append(PowArray)
+                Data.append(PowArray)
 
 
         # Return data
-        return(FreqArray, InputData)
+        return(FreqArray, Data)
 
 
     except OSError:
-        raise OSError("Error when loading file {:s}".format(List[i*3 + j][fileIdx]))
+        raise OSError("Error when loading file {:s}".format(List[p*3 + a][fileIdx]))
     except IndexError:
-        raise IndexError("Error when loading data from file {:s} into array.".format(List[i*3 + j][fileIdx]))
+        raise IndexError("Error when loading data from file {:s} into array.".format(List[p*3 + a][fileIdx]))
 
 ###  END Function: Access files and load data into arrays  ###
 
@@ -276,18 +277,18 @@ def print_runconfig(List, StartTimes, EndTimes, ActualTimeRanges, Band):
     print()
     print("Polarisation, direction, time range\t\t\tTime interval\tNumFiles expected  NumFiles available")
     print("-------------------------------------------------------------------------------------------------------------")
-    for i in range(0,2):  # Pol
-        for j in range(0,3):  # Az
-            TimeRange = ActualTimeRanges[i*3 + j] / timedelta(hours=24)
+    for p in range(0,2):  # Pol
+        for a in range(0,3):  # Az
+            TimeRange = ActualTimeRanges[p*3 + a] / timedelta(hours=24)
 
             # Assume that between StartTime and EndTime, files should be uniformly
             # distributed with 15 minutes interval between them. The division by 9
             # is done because there are 9 different possible configurations.
-            Ideal_numfiles = (ActualTimeRanges[i*3 + j] / 9) // timedelta(minutes=15)
+            Ideal_numfiles = (ActualTimeRanges[p*3 + a] / 9) // timedelta(minutes=15)
 
             print()
-            print("Polarisation: {:s}; Azimuth: {:s} deg".format(Pol[i], Az[j]))
-            print("{:s}  -->  {:s}\t{:.2f} day(s)\t\t{:d}\t\t{:d}".format(StartTimes[i*3 + j].strftime("%H:%M, %d %B %Y"), EndTimes[i*3 + j].strftime("%H:%M, %d %B %Y"), TimeRange, Ideal_numfiles, len(List[i*3 + j])))
+            print("Polarisation: {:s}; Azimuth: {:s} deg".format(Pol[p], Az[a]))
+            print("{:s}  -->  {:s}\t{:.2f} day(s)\t\t{:d}\t\t{:d}".format(StartTimes[p*3 + a].strftime("%H:%M, %d %B %Y"), EndTimes[p*3 + a].strftime("%H:%M, %d %B %Y"), TimeRange, Ideal_numfiles, len(List[p*3 + a])))
             print("-------------------------------------------------------------------------------------------------------------")
 
     StartTimes.sort()
@@ -404,10 +405,10 @@ try:
     EndTimes = []
     ActualTimeRanges = []
     Ideal_numfiles = []
-    for i in range(0,2):  # Pol
-        for j in range(0,3):  # Az
+    for p in range(0,2):  # Pol
+        for a in range(0,3):  # Az
             tmp_Files = []
-            tmp_Start,tmp_End = find_files(StartTime, EndTime, Pol[i], Az[j], Band, DataPath, tmp_Files)
+            tmp_Start,tmp_End = find_files(StartTime, EndTime, Pol[p], Az[a], Band, DataPath, tmp_Files)
             StartTimes.append(tmp_Start)
             EndTimes.append(tmp_End)
 
@@ -477,33 +478,32 @@ except OSError:
 ###  BEGIN Averaging and plotting  ###
 
 Mean = []
-for i in range(0, len(InputData)):
+for i in range(0,6):  # 2 Pol x 3 Az
     # Subtract amplifier gain for the relevant band
-    InputData[i] = subtract_AmpGain(InputData[i], Band)
+    CorrectedData = subtract_AmpGain(InputData[i], Band)
 
     # Calculate mean of amplitudes for each frequency
     # (across columns/along rows: axis = 1)
-    Mean.append(mean(InputData[i], axis=1))
+    Mean.append(mean(CorrectedData, axis=1))
 
 
 # Output results to csv file
 print()
-print("Writing output results for Polarisation H to {:s}".format(outfilenameH))
-for k in range(0, len(Frequency)):
-    fout_H.write("{:f}".format(Frequency[k]))
-    for j in range(0,3):  # Az
-        fout_H.write(",{:f}".format(Mean[j][k]))
+print("Writing output results for Polarisation H to {:s} and Polarisation V to {:s}".format(outfilenameH, outfilenameV))
+for i in range(0, len(Frequency)):
+    # Write frequency values
+    fout_H.write("{:f}".format(Frequency[i]))
+    fout_V.write("{:f}".format(Frequency[i]))
+
+    # Write averages for each direction
+    for a in range(0,3):  # Az
+        fout_H.write(",{:f}".format(Mean[a][i]))
+        fout_V.write(",{:f}".format(Mean[3 + a][i]))
+
     fout_H.write("\n")
-
-fout_H.close()
-
-print("Writing output results for Polarisation V to {:s}".format(outfilenameV))
-for k in range(0, len(Frequency)):
-    fout_V.write("{:f}".format(Frequency[k]))
-    for j in range(0,3):  # Az
-        fout_V.write(",{:f}".format(Mean[3 + j][k]))
     fout_V.write("\n")
 
+fout_H.close()
 fout_V.close()
 
 
@@ -515,40 +515,40 @@ xUpperLim = Frequency[-1]
 
 fig = [[],[]]
 ax  = [[],[]]
-colours = [ "orange", "blue", "green"]
+colours = ["orange", "blue", "green"]
 
-for i in range(0,2):  # Pol
+for p in range(0,2):  # Pol
 
-    fig[i], ax[i] = plt.subplots(1,1)
+    fig[p], ax[p] = plt.subplots(1,1)
     plt.tight_layout()
 
-    ax[i].set_title("{:s} -- {:s} (Pol: {:s}, Band {:s})".format(StartTime.strftime("%d %B %Y"), EndTime.strftime("%d %B %Y"), Pol[i], Band))
-    ax[i].set_xlabel("Frequency", fontsize=12)
+    ax[p].set_title("{:s} -- {:s} (Pol: {:s}, Band {:s})".format(StartTime.strftime("%d %B %Y"), EndTime.strftime("%d %B %Y"), Pol[p], Band))
+    ax[p].set_xlabel("Frequency", fontsize=12)
 
 # Custom labels on the frequency axis, since different frequency bands
 # are strictly defined.
     if Band == "0":
-        ax[i].set_xlim(1e6, 1e9)
-        ax[i].set_xticks([1e6, 125e6, 250e6, 375e6, 500e6, 625e6, 750e6, 875e6, 1e9])
+        ax[p].set_xlim(1e6, 1e9)
+        ax[p].set_xticks([1e6, 125e6, 250e6, 375e6, 500e6, 625e6, 750e6, 875e6, 1e9])
         formatter = EngFormatter(unit="Hz", places=0)
     elif Band == "1":
-        ax[i].set_xlim(325.0e6, 329.0e6)
-        ax[i].set_xticks([325.0e6, 325.5e6, 326.0e6, 326.5e6, 327.0e6, 327.5e6, 328.0e6, 328.5e6, 329.0e6])
+        ax[p].set_xlim(325.0e6, 329.0e6)
+        ax[p].set_xticks([325.0e6, 325.5e6, 326.0e6, 326.5e6, 327.0e6, 327.5e6, 328.0e6, 328.5e6, 329.0e6])
         formatter = EngFormatter(unit="Hz", places=1)
     else:
-        ax[i].set_xlim(327.275e6, 327.525e6)
-        ax[i].set_xticks([327.275e6, 327.350e6, 327.400e6, 327.450e6, 327.525e6])
+        ax[p].set_xlim(327.275e6, 327.525e6)
+        ax[p].set_xticks([327.275e6, 327.350e6, 327.400e6, 327.450e6, 327.525e6])
         formatter = EngFormatter(unit="Hz", places=3)
 
-    ax[i].xaxis.set_major_formatter(formatter)
-    ax[i].tick_params(labelsize=14)
-    ax[i].set_ylabel("Mean Amplitude / dBm", fontsize=12)
-    ax[i].grid(True)
-    for j in range(0,3):  # Az
-        ax[i].plot(Frequency, Mean[i*3 + j], color=colours[j], label="Az = "+Az[j]+chr(176))
+    ax[p].xaxis.set_major_formatter(formatter)
+    ax[p].tick_params(labelsize=14)
+    ax[p].set_ylabel("Mean Amplitude / dBm", fontsize=12)
+    ax[p].grid(True)
+    for a in range(0,3):  # Az
+        ax[p].plot(Frequency, Mean[p*3 + a], color=colours[a], label="Az = "+Az[a]+chr(176))
 
     # Legend
-    ax[i].legend(loc="upper right", bbox_to_anchor=(0.93,0.97), frameon=True)
+    ax[p].legend(loc="upper right", bbox_to_anchor=(0.93,0.97), frameon=True)
 
 plt.show()
 
