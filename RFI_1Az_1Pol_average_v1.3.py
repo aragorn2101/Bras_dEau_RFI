@@ -23,16 +23,16 @@
 #
 # ------------------------------------------------------------------------------
 #
-# Changelog
+#  Changelog
 #
-# 1.1: 03.06.2019
-#      * Added flagging of data for malfunctioned amplifier
-# 1.2: 07.08.2019
-#      * Moved creation of numpy arrays to hold data into the function, which
-#        also corrected for the numpy.append() malfunction.
-# 1.3: 03.12.2019
-#      * Added output to text file for average.
-#      * Subtract amplifier gain according to experimental data.
+#  1.1: 03.06.2019
+#       * Added flagging of data for malfunctioned amplifier
+#  1.2: 07.08.2019
+#       * Moved creation of numpy arrays to hold data into the function, which
+#         also corrected for the numpy.append() malfunction.
+#  1.3: 03.12.2019
+#       * Added output to text file for average.
+#       * Subtract amplifier gain according to experimental data.
 #
 
 
@@ -50,6 +50,7 @@ from matplotlib.ticker import EngFormatter
 ###
 
 # Number of data values in each TXT data file
+# This is the number of frequency values at which power was measured.
 global NumRows
 NumRows = 461
 
@@ -68,6 +69,9 @@ seed(21)
 ###
 
 ###  BEGIN Function: Construct filename  ###
+#
+#  Returns full path of the expected data file with the appropriate name.
+#
 def construct_filename(DateTime, Pol, Az, Band, DataPath):
     MiddleName = DateTime.strftime("%Y%m%d_%H%M") + Pol
 
@@ -89,12 +93,18 @@ def construct_filename(DateTime, Pol, Az, Band, DataPath):
 
 
 ###  BEGIN Function: Find files and make list  ###
-def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
-    # Clean list
-    List.clear()
-
+#
+#  Returns list of files, start time (time stamp for the first data file),
+#  and end time (time stamp for last data file)
+#  The list is of length NumFiles - the number of data files available for the
+#  input parameters.
+#
+def find_files(StartTime, EndTime, Pol, Az, Band, DataPath):
     dt1 = timedelta(minutes = 1)
     dt2 = timedelta(minutes = 15)
+
+    # Create empty list
+    List = []
 
     # Find the first file
     while True:
@@ -133,13 +143,17 @@ def find_files(StartTime, EndTime, Pol, Az, Band, DataPath, List):
         raise IndexError
 
     EndTime = LastOne
-    return(StartTime,EndTime)
+    return(List, StartTime, EndTime)
 
 ###  END Function: Find files and make list  ###
 
 
 
 ###  BEGIN Function: Check if amplifier was working correctly  ###
+#
+#  Returns: 0 if data valid,
+#           1 if invalid data values due to amplifier malfunction.
+#
 def CheckAmp(RawData):
     Mean = 0.0
 
@@ -159,6 +173,11 @@ def CheckAmp(RawData):
 
 
 ###  BEGIN Function: Access files and load data into arrays  ###
+#
+#  Returns a numpy array of shape (NumRows x NumFiles) holding the power data.
+#  Function also returns an array holding the frequency values; this is of
+#  length NumRows.
+#
 def LoadData(List, Ideal_NFiles):
 
     # List for rejected files
@@ -222,6 +241,10 @@ def LoadData(List, Ideal_NFiles):
 
 
 ###  BEGIN Function: Subtract amplifier gain from raw data  ###
+#
+#  Returns array of shape (NumRows x NumFiles), same shape as
+#  the InputData array passed to function.
+#
 def subtract_AmpGain(InputData, Band):
 
     # Open amplifier gain data
@@ -239,6 +262,9 @@ def subtract_AmpGain(InputData, Band):
 
 
 ###  BEGIN Function: Print help  ###
+#
+#  Prints message and returns 0
+#
 def print_help(ScriptName):
     print()
     print("Usage: {:s} STARTDATE STARTTIME ENDDATE ENDTIME POL AZ BAND DATADIR".format(ScriptName))
@@ -269,6 +295,9 @@ def print_help(ScriptName):
 
 
 ###  BEGIN Function: Print runtime configurations  ###
+#
+#  Prints message and returns 0
+#
 def print_runconfig(List, Ideal_NFiles, StartTime, EndTime, TimeRange, Pol, Az, Band, DataPath):
 
     # String to describe frequency bandwidth
@@ -420,10 +449,9 @@ except FileNotFoundError:
 
 ###  BEGIN Browse through file names  ###
 
-Files = []
 try:
     # Search for files in time range and fill array of file names
-    StartTime,EndTime = find_files(StartTime, EndTime, Pol, Az, Band, DataPath, Files)
+    Files, StartTime, EndTime = find_files(StartTime, EndTime, Pol, Az, Band, DataPath)
 
 except FileNotFoundError:
     print("Error: Cannot find data files within input time interval with corresponding parameters.")

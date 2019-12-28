@@ -31,6 +31,7 @@
 #         conflict with the common i,j
 #       * Reduced the quadruple loops for writing output results to
 #         only 2 loops
+#       * Function find_files() returns List
 #
 
 from sys import argv
@@ -47,7 +48,7 @@ from matplotlib.ticker import EngFormatter
 ###
 
 # Number of data values in each TXT data file
-# This is the number of frequency values at which power was mesured.
+# This is the number of frequency values at which power was measured.
 global NumRows
 NumRows = 461
 
