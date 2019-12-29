@@ -26,13 +26,17 @@
 #  Changelog
 #
 #  1.1: 03.06.2019
-#       * Added flagging of data for malfunctioned amplifier
+#       * Added flagging of data for malfunctioned amplifier.
 #  1.2: 07.08.2019
 #       * Moved creation of numpy arrays to hold data into the function, which
 #         also corrected for the numpy.append() malfunction.
 #  1.3: 03.12.2019
 #       * Added output to text file for average.
 #       * Subtract amplifier gain according to experimental data.
+#  1.4: 29.12.2019
+#       * find_files() returns the list of files.
+#       * Upgraded plotting to use Matplotlib Axes to prevent errors caused
+#         by tight_layout().
 #
 
 
@@ -537,32 +541,32 @@ print("Generating plot ...")
 xLowerLim = Frequency[0]
 xUpperLim = Frequency[-1]
 
-plt.figure(1)
+fig, ax = plt.subplots(1,1)
 plt.tight_layout()
-ax1 = plt.subplot(1,1,1)
-plt.title("{:s} -- {:s} (Pol {:s}, Az {:s}{:s}, Band {:s})".format(StartTime.strftime("%H:%M, %d %B %Y"), EndTime.strftime("%H:%M, %d %B %Y"), Pol, Az, chr(176), Band))
-plt.xlabel("Frequency", fontsize=12)
+
+ax.set_title("{:s} -- {:s} (Pol {:s}, Az {:s}{:s}, Band {:s})".format(StartTime.strftime("%H:%M, %d %B %Y"), EndTime.strftime("%H:%M, %d %B %Y"), Pol, Az, chr(176), Band))
+ax.set_xlabel("Frequency", fontsize=12)
 
 # Custom labels on the frequency axis, since different frequency bands
 # are strictly defined.
 if Band == "0":
-    plt.xlim(1e6, 1e9)
-    plt.xticks([1e6, 125e6, 250e6, 375e6, 500e6, 625e6, 750e6, 875e6, 1e9])
+    ax.set_xlim(1e6, 1e9)
+    ax.set_.xticks([1e6, 125e6, 250e6, 375e6, 500e6, 625e6, 750e6, 875e6, 1e9])
     formatter = EngFormatter(unit="Hz", places=0)
 elif Band == "1":
-    plt.xlim(325.0e6, 329.0e6)
-    plt.xticks([325.0e6, 325.5e6, 326.0e6, 326.5e6, 327.0e6, 327.5e6, 328.0e6, 328.5e6, 329.0e6])
+    ax.set_xlim(325.0e6, 329.0e6)
+    ax.set_xticks([325.0e6, 325.5e6, 326.0e6, 326.5e6, 327.0e6, 327.5e6, 328.0e6, 328.5e6, 329.0e6])
     formatter = EngFormatter(unit="Hz", places=1)
 else:
-    plt.xlim(327.275e6, 327.525e6)
-    plt.xticks([327.275e6, 327.350e6, 327.400e6, 327.450e6, 327.525e6])
+    ax.set_xlim(327.275e6, 327.525e6)
+    ax.set_xticks([327.275e6, 327.325e6, 327.400e6, 327.475e6, 327.525e6])
     formatter = EngFormatter(unit="Hz", places=3)
 
-ax1.xaxis.set_major_formatter(formatter)
-plt.tick_params(labelsize=14)
-plt.ylabel("Mean Amplitude / dBm", fontsize=12)
-plt.grid(True)
-plt.plot(Frequency, Mean, color="blue")
+ax.xaxis.set_major_formatter(formatter)
+ax.tick_params(labelsize=14)
+ax.set_ylabel("Mean power / dBm", fontsize=12)
+ax.grid(True)
+ax.plot(Frequency, Mean, color="brown")
 
 plt.show()
 
