@@ -5,7 +5,7 @@
 #  A plot is made for each polarisation (H and V). Each plot contains the
 #  average for the 3 distinct directions Az = 0, 120, 240 degrees. The results
 #  are output to 2 different files, one for each polarisation.
-#  Version 1.0
+#  Version 1.1
 #
 #  Copyright (c) 2019 Nitish Ragoomundun, Mauritius
 #
@@ -32,6 +32,7 @@
 #       * Reduced the quadruple loops for writing output results to
 #         only 2 loops
 #       * Function find_files() returns List
+#       * Removed the ActualTimeRanges list
 #
 
 from sys import argv
@@ -301,7 +302,7 @@ def print_help(ScriptName):
 #
 #  Prints message and returns 0
 #
-def print_runconfig(List, StartTimes, EndTimes, ActualTimeRanges, Band):
+def print_runconfig(List, StartTimes, EndTimes, Band):
 
     # String to describe frequency bandwidth
     if Band == "0":
@@ -318,16 +319,16 @@ def print_runconfig(List, StartTimes, EndTimes, ActualTimeRanges, Band):
     print("-------------------------------------------------------------------------------------------------------------")
     for p in range(0,2):  # Pol
         for a in range(0,3):  # Az
-            TimeRange = ActualTimeRanges[p*3 + a] / timedelta(hours=24)
+            ActualTimeRange = (EndTimes[p*3 + a] - StartTimes[p*3 + a])
 
             # Assume that between StartTime and EndTime, files should be uniformly
-            # distributed with 15 minutes interval between them. The division by 9
-            # is done because there are 9 different possible configurations.
-            Ideal_numfiles = (ActualTimeRanges[p*3 + a] / 9) // timedelta(minutes=15)
+            # distributed with 15 minutes interval between them. So, an expected
+            # number of files can be calculated. The division by 9 is done because
+            # there are 9 different possible configurations.
 
             print()
             print("Polarisation: {:s}; Azimuth: {:s} deg".format(Pol[p], Az[a]))
-            print("{:s}  -->  {:s}\t{:.2f} day(s)\t\t{:d}\t\t{:d}".format(StartTimes[p*3 + a].strftime("%H:%M, %d %B %Y"), EndTimes[p*3 + a].strftime("%H:%M, %d %B %Y"), TimeRange, Ideal_numfiles, len(List[p*3 + a])))
+            print("{:s}  -->  {:s}\t{:5.2f} day(s)\t\t{:d}\t\t{:d}".format(StartTimes[p*3 + a].strftime("%H:%M, %d %B %Y"), EndTimes[p*3 + a].strftime("%H:%M, %d %B %Y"), ActualTimeRange/timedelta(hours=24), (ActualTimeRange/9)//timedelta(minutes=15), len(List[p*3 + a])))
             print("-------------------------------------------------------------------------------------------------------------")
 
     StartTimes.sort()
@@ -443,14 +444,9 @@ try:
     Files = []
     StartTimes = []
     EndTimes = []
-    ActualTimeRanges = []
-    Ideal_numfiles = []
     for p in range(0,2):  # Pol
         for a in range(0,3):  # Az
             tmp_Files, tmp_Start, tmp_End = find_files(StartTime, EndTime, Pol[p], Az[a], Band, DataPath)
-
-            # Calculate actual time range for each (Pol, Az) combination
-            ActualTimeRanges.append(tmp_End - tmp_Start)
 
             # Append list of files and times to the relevant arrays
             Files.append(tmp_Files)
@@ -472,7 +468,7 @@ except IndexError:
 
 # First print runtime configuration settings and ask user for
 # confirmation before proceeding.
-print_runconfig(Files, StartTimes, EndTimes, ActualTimeRanges, Band)
+print_runconfig(Files, StartTimes, EndTimes, Band)
 Ans = input("\nDo you wish to proceed with calculations? (y/n)  ")
 if Ans != "Y" and Ans != "y":
     exit(100)
@@ -576,12 +572,12 @@ for p in range(0,2):  # Pol
         formatter = EngFormatter(unit="Hz", places=1)
     else:
         ax[p].set_xlim(327.275e6, 327.525e6)
-        ax[p].set_xticks([327.275e6, 327.350e6, 327.400e6, 327.450e6, 327.525e6])
+        ax[p].set_xticks([327.275e6, 327.325e6, 327.400e6, 327.475e6, 327.525e6])
         formatter = EngFormatter(unit="Hz", places=3)
 
     ax[p].xaxis.set_major_formatter(formatter)
     ax[p].tick_params(labelsize=14)
-    ax[p].set_ylabel("Mean Amplitude / dBm", fontsize=12)
+    ax[p].set_ylabel("Mean power / dBm", fontsize=12)
     ax[p].grid(True)
     for a in range(0,3):  # Az
         ax[p].plot(Frequency, Mean[p*3 + a], color=colours[a], label="Az = "+Az[a]+chr(176))
