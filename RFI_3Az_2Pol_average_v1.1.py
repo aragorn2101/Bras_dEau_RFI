@@ -560,8 +560,8 @@ for p in range(0,2):  # Pol
     ax[p].set_title("{:s} -- {:s} (Pol: {:s}, Band {:s})".format(StartTime.strftime("%d %B %Y"), EndTime.strftime("%d %B %Y"), Pol[p], Band))
     ax[p].set_xlabel("Frequency", fontsize=12)
 
-# Custom labels on the frequency axis, since different frequency bands
-# are strictly defined.
+    # Custom labels on the frequency axis, since different frequency bands
+    # are strictly defined.
     if Band == "0":
         ax[p].set_xlim(1e6, 1e9)
         ax[p].set_xticks([1e6, 125e6, 250e6, 375e6, 500e6, 625e6, 750e6, 875e6, 1e9])
